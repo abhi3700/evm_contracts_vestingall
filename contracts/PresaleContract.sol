@@ -9,44 +9,42 @@ import "hardhat/console.sol";
 
 import './util/DateTime.sol';
 
-contract VestingContract is Ownable {
+contract PresaleContract is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    address public beneficiary;
     IERC20 public token;
 
     uint256 private TOTAL_AMOUNT = 100000000000 ether;
-    uint256 public totalVestedAmount;
-    uint256 public totalClaimableAmount;
-    uint256 public totalWithdrawAmount;
+    uint256 public totalLockedAmount;
+    uint256 public totalAvailableAmount;
+    uint256 public totalPresaleAmount;
 
     struct Step {
         uint timestamp;
         uint16 percent;
-        uint8 claimed;
+        uint8 unlocked;
     }
 
     Step[] steps;
 
-    event TokensWithdraw(uint256 amount);
-    event TokensClaim(uint256 amount);
+    event TokensUnlock(uint256 amount);
+    event TokensPresale(uint256 amount);
 
     constructor(
-        address _beneficiary,
         address _token
     ) {
-        require(_beneficiary != address(0));
         require(_token != address(0));
 
-        beneficiary = _beneficiary;
         token = IERC20(_token);
 
-        totalVestedAmount = TOTAL_AMOUNT;
-        totalClaimableAmount = 0;
-        totalWithdrawAmount = 0;
+        totalLockedAmount = TOTAL_AMOUNT;
+        totalAvailableAmount = 0;
+        totalPresaleAmount = 0;
 
-        steps.push(Step(new DateTime().toTimestamp(2021, 2, 18), 10, 0));
+        steps.push(Step(new DateTime().toTimestamp(2020, 12, 18), 10, 0));
+        steps.push(Step(new DateTime().toTimestamp(2022, 1, 18), 10, 0));
+        steps.push(Step(new DateTime().toTimestamp(2022, 2, 18), 10, 0));
         steps.push(Step(new DateTime().toTimestamp(2022, 3, 18), 10, 0));
         steps.push(Step(new DateTime().toTimestamp(2022, 4, 18), 10, 0));
         steps.push(Step(new DateTime().toTimestamp(2022, 5, 18), 10, 0));
@@ -54,34 +52,32 @@ contract VestingContract is Ownable {
         steps.push(Step(new DateTime().toTimestamp(2022, 7, 18), 10, 0));
         steps.push(Step(new DateTime().toTimestamp(2022, 8, 18), 10, 0));
         steps.push(Step(new DateTime().toTimestamp(2022, 9, 18), 10, 0));
-        steps.push(Step(new DateTime().toTimestamp(2022, 10, 18), 10, 0));
-        steps.push(Step(new DateTime().toTimestamp(2022, 11, 18), 10, 0));
     }
 
-    function claim() public onlyOwner {
+    function unlock() public onlyOwner {
         uint256 sum = 0;
         for (uint i = 0; i < steps.length; i++) {
-            if (steps[i].claimed == 1) continue;
+            if (steps[i].unlocked == 1) continue;
             if (steps[i].timestamp <= block.timestamp) {
                 uint256 amount = TOTAL_AMOUNT.mul(steps[i].percent).div(100);
                 sum = sum.add(amount);
-                steps[i].claimed = 1;
+                steps[i].unlocked = 1;
             }
         }
 
-        require(totalVestedAmount > sum, "");
-        totalClaimableAmount = totalClaimableAmount.add(sum);
-        totalVestedAmount = totalVestedAmount.sub(sum);
+        require(totalLockedAmount > sum, "");
+        totalLockedAmount = totalLockedAmount.sub(sum);
+        totalAvailableAmount = totalAvailableAmount.add(sum);
 
-        emit TokensClaim(totalClaimableAmount);
+        emit TokensUnlock(totalAvailableAmount);
     }
 
-    function withdraw() public onlyOwner {
-        require(totalClaimableAmount > 0, "Claimable amount is zero");
-        token.safeTransfer(beneficiary, totalClaimableAmount);
+    function presale(address beneficiary, uint256 amount) public onlyOwner {
+        require(totalAvailableAmount >= amount, "Available amount is less than amount");
+        token.safeTransfer(beneficiary, amount);
 
-        emit TokensWithdraw(totalClaimableAmount);
-        totalWithdrawAmount = totalWithdrawAmount.add(totalClaimableAmount);
-        totalClaimableAmount = 0;
+        emit TokensPresale(amount);
+        totalPresaleAmount = totalPresaleAmount.add(amount);
+        totalAvailableAmount = totalAvailableAmount.sub(amount);
     }
 }
