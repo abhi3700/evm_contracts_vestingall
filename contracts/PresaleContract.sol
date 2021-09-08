@@ -3,19 +3,20 @@ pragma solidity ^0.8.4;
 
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import "hardhat/console.sol";
 
 
 import './util/DateTime.sol';
 
-contract PresaleContract is Ownable {
+contract PresaleContract is Ownable, Pausable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    IERC20 public token;
+    IERC20 public vestingToken;
 
-    uint256 private TOTAL_AMOUNT = 100000000000 ether;
+    uint256 private TOTAL_AMOUNT;
     uint256 public totalLockedAmount;
     uint256 public totalAvailableAmount;
     uint256 public totalPresaleAmount;
@@ -32,11 +33,11 @@ contract PresaleContract is Ownable {
     event TokensPresale(uint256 amount);
 
     constructor(
-        address _token
+        IERC20 _token,
+        uint256 _total_amount
     ) {
-        require(_token != address(0));
-
-        token = IERC20(_token);
+        vestingToken = _token;
+        TOTAL_AMOUNT = _total_amount;
 
         totalLockedAmount = TOTAL_AMOUNT;
         totalAvailableAmount = 0;
@@ -74,10 +75,11 @@ contract PresaleContract is Ownable {
 
     function presale(address beneficiary, uint256 amount) public onlyOwner {
         require(totalAvailableAmount >= amount, "Available amount is less than amount");
-        token.safeTransfer(beneficiary, amount);
 
-        emit TokensPresale(amount);
         totalPresaleAmount = totalPresaleAmount.add(amount);
         totalAvailableAmount = totalAvailableAmount.sub(amount);
+        vestingToken.safeTransfer(beneficiary, amount);
+
+        emit TokensPresale(amount);
     }
 }

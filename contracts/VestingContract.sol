@@ -7,81 +7,72 @@ import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import "hardhat/console.sol";
 
 
-import './util/DateTime.sol';
+import './TimelockContract.sol';
 
 contract VestingContract is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     address public beneficiary;
-    IERC20 public token;
+    IERC20 public vestingToken;
 
-    uint256 private TOTAL_AMOUNT = 100000000000 ether;
+    uint256 public TOTAL_AMOUNT;
     uint256 public totalVestedAmount;
-    uint256 public totalClaimableAmount;
     uint256 public totalWithdrawAmount;
 
-    struct Step {
-        uint timestamp;
-        uint16 percent;
-        uint8 claimed;
-    }
+    TimelockContract[] timelocks;
 
-    Step[] steps;
-
-    event TokensWithdraw(uint256 amount);
-    event TokensClaim(uint256 amount);
+    event TokenVest(uint256 amount);
+    event TokenWithdraw(uint256 amount);
 
     constructor(
         address _beneficiary,
-        address _token
+        IERC20 _token,
+        uint256 _total_amount
     ) {
         require(_beneficiary != address(0));
-        require(_token != address(0));
+        require(_token.totalSupply() >= _total_amount);
 
         beneficiary = _beneficiary;
-        token = IERC20(_token);
+        vestingToken = _token;
+        TOTAL_AMOUNT = _total_amount;
 
-        totalVestedAmount = TOTAL_AMOUNT;
-        totalClaimableAmount = 0;
+        totalVestedAmount = 0;
         totalWithdrawAmount = 0;
-
-        steps.push(Step(new DateTime().toTimestamp(2021, 2, 18), 10, 0));
-        steps.push(Step(new DateTime().toTimestamp(2022, 3, 18), 10, 0));
-        steps.push(Step(new DateTime().toTimestamp(2022, 4, 18), 10, 0));
-        steps.push(Step(new DateTime().toTimestamp(2022, 5, 18), 10, 0));
-        steps.push(Step(new DateTime().toTimestamp(2022, 6, 18), 10, 0));
-        steps.push(Step(new DateTime().toTimestamp(2022, 7, 18), 10, 0));
-        steps.push(Step(new DateTime().toTimestamp(2022, 8, 18), 10, 0));
-        steps.push(Step(new DateTime().toTimestamp(2022, 9, 18), 10, 0));
-        steps.push(Step(new DateTime().toTimestamp(2022, 10, 18), 10, 0));
-        steps.push(Step(new DateTime().toTimestamp(2022, 11, 18), 10, 0));
     }
 
-    function claim() public onlyOwner {
+    function vesting(uint256 releaseTime, uint256 percent) public onlyOwner {
+        uint256 vestingAmount = TOTAL_AMOUNT.mul(percent).div(100);
+        require(totalVestedAmount.add(vestingAmount) <= TOTAL_AMOUNT, 'Can not vest more than total amount');
+
+        TimelockContract newVesting = new TimelockContract(vestingToken, beneficiary, vestingAmount, releaseTime);
+        timelocks.push(newVesting);
+        
+        vestingToken.safeTransfer(address(newVesting), vestingAmount);
+        totalVestedAmount = totalVestedAmount.add(vestingAmount);
+
+        emit TokenVest(totalVestedAmount);
+    }
+
+    function claimableAmount() public view onlyOwner returns(uint256) {
         uint256 sum = 0;
-        for (uint i = 0; i < steps.length; i++) {
-            if (steps[i].claimed == 1) continue;
-            if (steps[i].timestamp <= block.timestamp) {
-                uint256 amount = TOTAL_AMOUNT.mul(steps[i].percent).div(100);
-                sum = sum.add(amount);
-                steps[i].claimed = 1;
-            }
+        for (uint i = 0; i < timelocks.length; i++) {
+            sum = sum.add(timelocks[i].releaseableAmount());
         }
-
-        require(totalVestedAmount > sum, "");
-        totalClaimableAmount = totalClaimableAmount.add(sum);
-        totalVestedAmount = totalVestedAmount.sub(sum);
-
-        emit TokensClaim(totalClaimableAmount);
+        return sum;
     }
 
     function withdraw() public onlyOwner {
-        require(totalClaimableAmount > 0, "Claimable amount is zero");
-        token.safeTransfer(beneficiary, totalClaimableAmount);
+        uint256 amount = claimableAmount();
+        require(amount > 0, "Claimable amount is zero");
 
-        emit TokensWithdraw(totalClaimableAmount);
-        totalWithdrawAmount = totalWithdrawAmount.add(totalClaimableAmount);
-        totalClaimableAmount = 0;
+        for (uint i = 0; i < timelocks.length; i++) {
+            if (timelocks[i].releaseable()) {
+                timelocks[i].release();
+            }
+        }
+
+        totalWithdrawAmount = totalWithdrawAmount.add(amount);
+        emit TokenWithdraw(amount);
     }
 }
