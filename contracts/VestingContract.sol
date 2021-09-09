@@ -48,8 +48,8 @@ contract VestingContract is Ownable {
         TimelockContract newVesting = new TimelockContract(vestingToken, beneficiary, vestingAmount, releaseTime);
         timelocks.push(newVesting);
         
-        vestingToken.safeTransfer(address(newVesting), vestingAmount);
         totalVestedAmount = totalVestedAmount.add(vestingAmount);
+        vestingToken.safeTransfer(address(newVesting), vestingAmount);
 
         emit TokenVest(totalVestedAmount);
     }
