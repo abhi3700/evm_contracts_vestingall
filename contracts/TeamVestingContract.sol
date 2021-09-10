@@ -10,22 +10,22 @@ import "hardhat/console.sol";
 
 import './TimelockContract.sol';
 
-contract PresaleContract is Ownable, Pausable {
+contract TeamVestingContract is Ownable, Pausable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     IERC20 public vestingToken;
 
     uint256 public TOTAL_AMOUNT;
-    uint256 public totalLockedAmount;
+    uint256 public totalVestedAmount;
     uint256 public totalWithdrawAmount;
 
     mapping(address => bool) revokes;
 
     TimelockContract[] timelocks;
 
+    event TokenVest(uint256 amount);
     event TokenWithdraw(uint256 amount);
-    event TokenPresale(uint256 amount);
     event Revoke(address account);
 
     constructor(
@@ -37,21 +37,21 @@ contract PresaleContract is Ownable, Pausable {
         vestingToken = _token;
         TOTAL_AMOUNT = _total_amount;
 
-        totalLockedAmount = 0;
+        totalVestedAmount = 0;
         totalWithdrawAmount = 0;
     }
 
-    function presale(uint256 releaseTime, address account, uint256 percent) public onlyOwner whenNotPaused {
+    function vesting(uint256 releaseTime, address account, uint256 percent) public onlyOwner whenNotPaused {
         uint256 vestingAmount = TOTAL_AMOUNT.mul(percent).div(100);
-        require(totalLockedAmount.add(vestingAmount) <= TOTAL_AMOUNT, 'Can not presale more than total amount');
+        require(totalVestedAmount.add(vestingAmount) <= TOTAL_AMOUNT, 'Can not vest more than total amount');
 
         TimelockContract newVesting = new TimelockContract(vestingToken, account, vestingAmount, releaseTime);
         timelocks.push(newVesting);
 
         vestingToken.safeTransfer(address(newVesting), vestingAmount);
-        totalLockedAmount = totalLockedAmount.add(vestingAmount);
+        totalVestedAmount = totalVestedAmount.add(vestingAmount);
 
-        emit TokenPresale(totalLockedAmount);
+        emit TokenVest(totalVestedAmount);
     }
 
     function revoke(address account) public onlyOwner whenNotPaused {
@@ -65,7 +65,7 @@ contract PresaleContract is Ownable, Pausable {
         emit Revoke(account);
     }
 
-    function availableAmount() public view onlyOwner whenNotPaused returns(uint256) {
+    function claimableAmount() public view onlyOwner whenNotPaused returns(uint256) {
         uint256 sum = 0;
         for (uint i = 0; i < timelocks.length; i++) {
             sum = sum.add(timelocks[i].releaseableAmount());
@@ -74,8 +74,8 @@ contract PresaleContract is Ownable, Pausable {
     }
 
     function withdraw() public onlyOwner whenNotPaused {
-        uint256 amount = availableAmount();
-        require(amount > 0, "Available amount is zero");
+        uint256 amount = claimableAmount();
+        require(amount > 0, "Claimable amount is zero");
 
         for (uint i = 0; i < timelocks.length; i++) {
             if (timelocks[i].releaseable()) {

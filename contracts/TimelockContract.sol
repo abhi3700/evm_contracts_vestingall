@@ -15,6 +15,7 @@ contract TimelockContract is Ownable {
     uint256 public amount;
     uint256 public releaseTime;
     bool public released;
+    bool public revoked;
 
     constructor(
         IERC20 _token,
@@ -27,17 +28,23 @@ contract TimelockContract is Ownable {
         amount = _amount;
         releaseTime = _releaseTime;
         released = false;
+        revoked = false;
     }
 
     function releaseable() public view onlyOwner returns(bool) {
-        if (block.timestamp < releaseTime) return false;
         if (released) return false;
+        if (revoked) return true;
+        if (block.timestamp < releaseTime) return false;
         return true;
     }
 
     function releaseableAmount() public view onlyOwner returns(uint256) {
         if (releaseable()) return amount;
         return 0;
+    }
+
+    function revoke() public onlyOwner {
+        revoked = true;
     }
 
     function release() public payable onlyOwner {
