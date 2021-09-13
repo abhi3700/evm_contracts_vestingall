@@ -10,7 +10,6 @@ contract TimelockContract is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    IERC20 public token;
     address public beneficiary;
     uint256 public amount;
     uint256 public releaseTime;
@@ -18,12 +17,10 @@ contract TimelockContract is Ownable {
     bool public revoked;
 
     constructor(
-        IERC20 _token,
         address _beneficiary,
         uint256 _amount,
         uint256 _releaseTime
     ) {
-        token = _token;
         beneficiary = _beneficiary;
         amount = _amount;
         releaseTime = _releaseTime;
@@ -49,8 +46,6 @@ contract TimelockContract is Ownable {
 
     function release() public payable onlyOwner {
         require(releaseable(), 'Can not release token');
-        require(token.totalSupply() >= amount, 'Total supply is less than amount');
-        token.safeTransfer(beneficiary, amount);
         released = true;
     }
 }

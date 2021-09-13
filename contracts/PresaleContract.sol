@@ -16,7 +16,6 @@ contract PresaleContract is Ownable, Pausable {
 
     IERC20 public vestingToken;
 
-    uint256 public TOTAL_AMOUNT;
     uint256 public totalLockedAmount;
     uint256 public totalWithdrawAmount;
 
@@ -24,33 +23,27 @@ contract PresaleContract is Ownable, Pausable {
 
     TimelockContract[] timelocks;
 
+    event TokenReceive(uint256 amount);
     event TokenWithdraw(uint256 amount);
     event TokenPresale(uint256 amount);
     event Revoke(address account);
 
     constructor(
-        IERC20 _token,
-        uint256 _total_amount
+        IERC20 _token
     ) {
-        require(_token.totalSupply() >= _total_amount);
-
         vestingToken = _token;
-        TOTAL_AMOUNT = _total_amount;
 
         totalLockedAmount = 0;
         totalWithdrawAmount = 0;
     }
 
-    function presale(uint256 releaseTime, address account, uint256 percent) public onlyOwner whenNotPaused {
-        uint256 vestingAmount = TOTAL_AMOUNT.mul(percent).div(100);
-        require(totalLockedAmount.add(vestingAmount) <= TOTAL_AMOUNT, 'Can not presale more than total amount');
+    function presale(uint256 releaseTime, address account, uint256 amount) public onlyOwner whenNotPaused {
+        require(totalLockedAmount.add(amount) <= vestingToken.balanceOf(address(this)), 'Can not presale more than total amount');
 
-        TimelockContract newVesting = new TimelockContract(vestingToken, account, vestingAmount, releaseTime);
+        TimelockContract newVesting = new TimelockContract(account, amount, releaseTime);
         timelocks.push(newVesting);
 
-        vestingToken.safeTransfer(address(newVesting), vestingAmount);
-        totalLockedAmount = totalLockedAmount.add(vestingAmount);
-
+        totalLockedAmount = totalLockedAmount.add(amount);
         emit TokenPresale(totalLockedAmount);
     }
 
@@ -76,9 +69,11 @@ contract PresaleContract is Ownable, Pausable {
     function withdraw() public onlyOwner whenNotPaused {
         uint256 amount = availableAmount();
         require(amount > 0, "Available amount is zero");
+        require(amount <= vestingToken.balanceOf(address(this)), "Can not withdraw more than total amount");
 
         for (uint i = 0; i < timelocks.length; i++) {
             if (timelocks[i].releaseable()) {
+                vestingToken.safeTransfer(timelocks[i].beneficiary(), timelocks[i].amount());
                 timelocks[i].release();
             }
         }
