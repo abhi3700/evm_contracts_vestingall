@@ -29,9 +29,9 @@ contract TimelockContract is Ownable {
     }
 
     function releaseable() public view onlyOwner returns(bool) {
-        if (released) return false;
-        if (revoked) return true;
+        if (released || revoked) return false;
         if (block.timestamp < releaseTime) return false;
+        if (amount == 0) return false;
         return true;
     }
 

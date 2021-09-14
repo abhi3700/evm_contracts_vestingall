@@ -7,15 +7,16 @@ import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import "hardhat/console.sol";
 
-
+import "./IERC20Recipient.sol";
 import './TimelockContract.sol';
 
-contract TeamVestingContract is Ownable, Pausable {
+contract TeamVestingContract is IERC20Recipient, Ownable, Pausable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     IERC20 public vestingToken;
 
+    uint256 public TOTAL_AMOUNT;
     uint256 public totalVestedAmount;
     uint256 public totalWithdrawAmount;
 
@@ -33,12 +34,20 @@ contract TeamVestingContract is Ownable, Pausable {
     ) {
         vestingToken = _token;
 
+        TOTAL_AMOUNT = 0;
         totalVestedAmount = 0;
         totalWithdrawAmount = 0;
     }
 
+    function tokenFallback(address _from, uint256 _value) public override {
+        require(_from == owner(), 'Money must be transferred from token contract address');
+        require(TOTAL_AMOUNT.add(_value) <= 100000000000 * 10 ** 18, 'After adding the tobe transferred amount with the current TOTAL_AMOUNT, it must be <= 100 Billions for team vesting');
+        TOTAL_AMOUNT = TOTAL_AMOUNT.add(_value);
+        emit TokenReceive(_value);
+    }
+
     function vesting(uint256 releaseTime, address account, uint256 amount) public onlyOwner whenNotPaused {
-        require(totalVestedAmount.add(amount) <= vestingToken.balanceOf(address(this)), 'Can not vest more than total amount');
+        require(totalVestedAmount.add(amount) <= TOTAL_AMOUNT, 'TOTAL_AMOUNT is already vested');
 
         TimelockContract newVesting = new TimelockContract(account, amount, releaseTime);
         timelocks.push(newVesting);
@@ -58,21 +67,23 @@ contract TeamVestingContract is Ownable, Pausable {
         emit Revoke(account);
     }
 
-    function claimableAmount() public view onlyOwner whenNotPaused returns(uint256) {
+    function claimableAmount(address account) public view onlyOwner whenNotPaused returns(uint256) {
         uint256 sum = 0;
         for (uint i = 0; i < timelocks.length; i++) {
-            sum = sum.add(timelocks[i].releaseableAmount());
+            if (timelocks[i].releaseable() && timelocks[i].beneficiary() == account) {
+                sum = sum.add(timelocks[i].releaseableAmount());
+            }
         }
         return sum;
     }
 
-    function withdraw() public onlyOwner whenNotPaused {
-        uint256 amount = claimableAmount();
+    function withdraw(address account) public onlyOwner whenNotPaused {
+        uint256 amount = claimableAmount(account);
         require(amount > 0, "Claimable amount is zero");
         require(amount <= vestingToken.balanceOf(address(this)), "Can not withdraw more than total amount");
 
         for (uint i = 0; i < timelocks.length; i++) {
-            if (timelocks[i].releaseable()) {
+            if (timelocks[i].releaseable() && timelocks[i].beneficiary() == account) {
                 vestingToken.safeTransfer(timelocks[i].beneficiary(), timelocks[i].amount());
                 timelocks[i].release();
             }

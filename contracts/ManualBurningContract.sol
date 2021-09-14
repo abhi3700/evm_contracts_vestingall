@@ -29,6 +29,7 @@ contract ManualBurningContract is Ownable, Pausable {
 
         totalWithdrawAmount = 0;
     }
+    
     function availableAmount() public view onlyOwner whenNotPaused returns(uint256) {
         return vestingToken.balanceOf(address(this));
     }

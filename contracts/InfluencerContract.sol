@@ -7,21 +7,26 @@ import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import "hardhat/console.sol";
 
-contract InfluencerContract is Ownable, Pausable {
+import "./IERC20Recipient.sol";
+
+contract InfluencerContract is IERC20Recipient, Ownable, Pausable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     address public beneficiary;
     IERC20 public vestingToken;
 
+    uint256 public TOTAL_AMOUNT;
     uint256 public releaseTime;
     uint256 public totalWithdrawAmount;
-
+    
+    event ReleaseTimeChange(uint256 _releaseTime);
+    event TokenReceive(uint256 amount);
     event TokenWithdraw(uint256 amount);
 
     constructor(
-        address _beneficiary,
         IERC20 _token,
+        address _beneficiary,
         uint256 _releaseTime
     ) {
         require(_beneficiary != address(0), 'Invalid address');
@@ -33,8 +38,16 @@ contract InfluencerContract is Ownable, Pausable {
         totalWithdrawAmount = 0;
     }
 
+    function tokenFallback(address _from, uint256 _value) public override {
+        require(_from == owner(), 'Money must be transferred from token contract address');
+        require(TOTAL_AMOUNT.add(_value) <= 50000000000 * 10 ** 18, 'After adding the tobe transferred amount with the current TOTAL_AMOUNT, it must be <= 50 Billions for influencers');
+        TOTAL_AMOUNT = TOTAL_AMOUNT.add(_value);
+        emit TokenReceive(_value);
+    }
+
     function setReleaseTime(uint256 _releaseTime) public onlyOwner whenNotPaused {
         releaseTime = _releaseTime;
+        emit ReleaseTimeChange(releaseTime);
     }
 
     function availableAmount() public view onlyOwner whenNotPaused returns(uint256) {
