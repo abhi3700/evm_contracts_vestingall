@@ -215,11 +215,6 @@ describe('MIS Vesting contract unit testing', function() {
 				.to.emit(marketingContract, 'Paused')
 				.withArgs(owner.address);
 		})
-		it ('owner is able to pause the revoke function', async function() {
-			await expect(marketingContract.pause())
-				.to.emit(marketingContract, 'Paused')
-				.withArgs(owner.address);
-		})
 		it ('owner is able to pause the withdraw function', async function() {
 			await expect(marketingContract.pause())
 				.to.emit(marketingContract, 'Paused')
@@ -235,13 +230,6 @@ describe('MIS Vesting contract unit testing', function() {
 				.to.emit(marketingContract, 'Paused')
 				.withArgs(owner.address);
 			await expect(marketingContract.vesting(new Date(2022, 1, 18).getTime() / 1000, addr1.address, ethers.utils.parseEther('10000000000')))
-				.to.be.revertedWith('Pausable: paused');
-		})
-		it ('Reverts execution of revoke function when paused', async function() {
-			await expect(marketingContract.pause())
-				.to.emit(marketingContract, 'Paused')
-				.withArgs(owner.address);
-			await expect(marketingContract.revoke(addr1.address))
 				.to.be.revertedWith('Pausable: paused');
 		})
 		it ('Reverts execution of withdraw function when paused', async function() {
@@ -283,24 +271,6 @@ describe('MIS Vesting contract unit testing', function() {
 				.withArgs(ethers.utils.parseEther('10000000000'));
 			expect(await erc20Contract.balanceOf(addr1.address))
 				.to.equal(ethers.utils.parseEther('10000000000'));
-		});
-		it('owner is able to revoke a vesting', async function() {
-			await expect(marketingContract.vesting(new Date(2021, 1, 18).getTime() / 1000, addr1.address, ethers.utils.parseEther('10000000000')))
-				.to.emit(marketingContract, 'TokenVest')
-				.withArgs(ethers.utils.parseEther('10000000000'));
-			await expect(marketingContract.revoke(addr1.address))
-				.to.emit(marketingContract, 'Revoke')
-				.withArgs(addr1.address);
-		});
-		it('Reverts, when addr1 claim a revoked vesting', async function() {
-			await expect(marketingContract.vesting(new Date(2021, 1, 18).getTime() / 1000, addr1.address, ethers.utils.parseEther('10000000000')))
-				.to.emit(marketingContract, 'TokenVest')
-				.withArgs(ethers.utils.parseEther('10000000000'));
-			await expect(marketingContract.revoke(addr1.address))
-				.to.emit(marketingContract, 'Revoke')
-				.withArgs(addr1.address);
-			await expect(marketingContract.withdraw(addr1.address))
-				.to.be.revertedWith('Available amount is zero');
 		});
 	})
 
@@ -373,6 +343,212 @@ describe('MIS Vesting contract unit testing', function() {
 				.withArgs(ethers.utils.parseEther('50000000000'));
 			expect(await erc20Contract.balanceOf(beneficiary.address))
 				.to.equal(ethers.utils.parseEther('50000000000'));
+		});
+	})
+
+	describe('Pre-sale', function () {
+		let presaleContract;
+		beforeEach(async function() {
+			const PresaleContract = await ethers.getContractFactory('PresaleContract');
+			presaleContract = await PresaleContract.deploy(erc20Contract.address);
+			await expect(erc20Contract.transfer(presaleContract.address, ethers.utils.parseEther('100000000000')))
+				.to.emit(presaleContract, 'TokenReceive')
+				.withArgs(ethers.utils.parseEther('100000000000'));
+		});
+
+		it ('owner is able to transfer ownership to owner2', async function() {
+			await expect(erc20Contract.transferOwnership(owner2.address))
+				.to.emit(erc20Contract, 'OwnershipTransferred')
+				.withArgs(owner.address, owner2.address);
+		})
+		it ('owner is able to pause the presale function', async function() {
+			await expect(presaleContract.pause())
+				.to.emit(presaleContract, 'Paused')
+				.withArgs(owner.address);
+		})
+		it ('owner is able to pause the withdraw function', async function() {
+			await expect(presaleContract.pause())
+				.to.emit(presaleContract, 'Paused')
+				.withArgs(owner.address);
+		})
+		it ('owner is able to pause the availableAmount function', async function() {
+			await expect(presaleContract.pause())
+				.to.emit(presaleContract, 'Paused')
+				.withArgs(owner.address);
+		})
+		it ('Reverts execution of presale function when paused', async function() {
+			await expect(presaleContract.pause())
+				.to.emit(presaleContract, 'Paused')
+				.withArgs(owner.address);
+			await expect(presaleContract.presale(new Date(2022, 1, 18).getTime() / 1000, addr1.address, ethers.utils.parseEther('10000000000')))
+				.to.be.revertedWith('Pausable: paused');
+		})
+		it ('Reverts execution of withdraw function when paused', async function() {
+			await expect(presaleContract.pause())
+				.to.emit(presaleContract, 'Paused')
+				.withArgs(owner.address);
+			await expect(presaleContract.withdraw(addr1.address))
+				.to.be.revertedWith('Pausable: paused');
+		})
+		it ('Reverts execution of availableAmount function when paused', async function() {
+			await expect(presaleContract.pause())
+				.to.emit(presaleContract, 'Paused')
+				.withArgs(owner.address);
+			await expect(presaleContract.availableAmount(addr1.address))
+				.to.be.revertedWith('Pausable: paused');
+		})
+		it('Reverts during presale by owner, when the TOTAL_AMOUNT is already vested', async function() {
+			await expect(presaleContract.presale(new Date(2022, 1, 18).getTime() / 1000, addr1.address, ethers.utils.parseEther('10000000000')))
+				.to.emit(presaleContract, 'TokenPresale')
+				.withArgs(ethers.utils.parseEther('10000000000'));
+			await expect(presaleContract.presale(new Date(2022, 2, 18).getTime() / 1000, addr2.address, ethers.utils.parseEther('20000000000')))
+				.to.emit(presaleContract, 'TokenPresale')
+				.withArgs(ethers.utils.parseEther('30000000000'));
+			await expect(presaleContract.presale(new Date(2022, 3, 18).getTime() / 1000, addr3.address, ethers.utils.parseEther('30000000000')))
+				.to.emit(presaleContract, 'TokenPresale')
+				.withArgs(ethers.utils.parseEther('60000000000'));
+			await expect(presaleContract.presale(new Date(2022, 4, 18).getTime() / 1000, addr4.address, ethers.utils.parseEther('40000000000')))
+				.to.emit(presaleContract, 'TokenPresale')
+				.withArgs(ethers.utils.parseEther('100000000000'));
+			await expect(presaleContract.presale(new Date(2022, 4, 18).getTime() / 1000, addr1.address, ethers.utils.parseEther('10000000000')))
+				.to.be.revertedWith('TOTAL_AMOUNT is already vested');				
+		});
+		it('addr1 successfully claim tokens', async function() {
+			await expect(presaleContract.presale(new Date(2021, 1, 18).getTime() / 1000, addr1.address, ethers.utils.parseEther('10000000000')))
+				.to.emit(presaleContract, 'TokenPresale')
+				.withArgs(ethers.utils.parseEther('10000000000'));
+			await expect(presaleContract.withdraw(addr1.address))
+				.to.emit(presaleContract, 'TokenWithdraw')
+				.withArgs(ethers.utils.parseEther('10000000000'));
+			expect(await erc20Contract.balanceOf(addr1.address))
+				.to.equal(ethers.utils.parseEther('10000000000'));
+		});
+	})
+
+	describe('Development FUND', function () {
+		let developmentFundContract;
+		beforeEach(async function() {
+			const DevelopmentFundContract = await ethers.getContractFactory('DevelopmentFundContract');
+			developmentFundContract = await DevelopmentFundContract.deploy(erc20Contract.address);
+			await expect(erc20Contract.transfer(developmentFundContract.address, ethers.utils.parseEther('150000000000')))
+				.to.emit(developmentFundContract, 'TokenReceive')
+				.withArgs(ethers.utils.parseEther('150000000000'));
+		});
+
+		it ('owner is able to transfer ownership to owner2', async function() {
+			await expect(erc20Contract.transferOwnership(owner2.address))
+				.to.emit(erc20Contract, 'OwnershipTransferred')
+				.withArgs(owner.address, owner2.address);
+		})
+		it ('owner is able to pause the vesting function', async function() {
+			await expect(developmentFundContract.pause())
+				.to.emit(developmentFundContract, 'Paused')
+				.withArgs(owner.address);
+		})
+		it ('owner is able to pause the withdraw function', async function() {
+			await expect(developmentFundContract.pause())
+				.to.emit(developmentFundContract, 'Paused')
+				.withArgs(owner.address);
+		})
+		it ('owner is able to pause the availableAmount function', async function() {
+			await expect(developmentFundContract.pause())
+				.to.emit(developmentFundContract, 'Paused')
+				.withArgs(owner.address);
+		})
+		it ('Reverts execution of vesting function when paused', async function() {
+			await expect(developmentFundContract.pause())
+				.to.emit(developmentFundContract, 'Paused')
+				.withArgs(owner.address);
+			await expect(developmentFundContract.vesting(new Date(2022, 1, 18).getTime() / 1000, addr1.address, ethers.utils.parseEther('10000000000')))
+				.to.be.revertedWith('Pausable: paused');
+		})
+		it ('Reverts execution of withdraw function when paused', async function() {
+			await expect(developmentFundContract.pause())
+				.to.emit(developmentFundContract, 'Paused')
+				.withArgs(owner.address);
+			await expect(developmentFundContract.withdraw(addr1.address))
+				.to.be.revertedWith('Pausable: paused');
+		})
+		it ('Reverts execution of availableAmount function when paused', async function() {
+			await expect(developmentFundContract.pause())
+				.to.emit(developmentFundContract, 'Paused')
+				.withArgs(owner.address);
+			await expect(developmentFundContract.availableAmount(addr1.address))
+				.to.be.revertedWith('Pausable: paused');
+		})
+		it('Reverts during vesting by owner, when the TOTAL_AMOUNT is already vested', async function() {
+			await expect(developmentFundContract.vesting(new Date(2022, 1, 18).getTime() / 1000, addr1.address, ethers.utils.parseEther('10000000000')))
+				.to.emit(developmentFundContract, 'TokenVest')
+				.withArgs(ethers.utils.parseEther('10000000000'));
+			await expect(developmentFundContract.vesting(new Date(2022, 2, 18).getTime() / 1000, addr2.address, ethers.utils.parseEther('30000000000')))
+				.to.emit(developmentFundContract, 'TokenVest')
+				.withArgs(ethers.utils.parseEther('40000000000'));
+			await expect(developmentFundContract.vesting(new Date(2022, 3, 18).getTime() / 1000, addr3.address, ethers.utils.parseEther('40000000000')))
+				.to.emit(developmentFundContract, 'TokenVest')
+				.withArgs(ethers.utils.parseEther('80000000000'));
+			await expect(developmentFundContract.vesting(new Date(2022, 4, 18).getTime() / 1000, addr4.address, ethers.utils.parseEther('70000000000')))
+				.to.emit(developmentFundContract, 'TokenVest')
+				.withArgs(ethers.utils.parseEther('150000000000'));
+			await expect(developmentFundContract.vesting(new Date(2022, 4, 18).getTime() / 1000, addr1.address, ethers.utils.parseEther('20000000000')))
+				.to.be.revertedWith('TOTAL_AMOUNT is already vested');
+		});
+		it('addr1 successfully claim tokens', async function() {
+			await expect(developmentFundContract.vesting(new Date(2021, 1, 18).getTime() / 1000, addr1.address, ethers.utils.parseEther('10000000000')))
+				.to.emit(developmentFundContract, 'TokenVest')
+				.withArgs(ethers.utils.parseEther('10000000000'));
+			await expect(developmentFundContract.withdraw(addr1.address))
+				.to.emit(developmentFundContract, 'TokenWithdraw')
+				.withArgs(ethers.utils.parseEther('10000000000'));
+			expect(await erc20Contract.balanceOf(addr1.address))
+				.to.equal(ethers.utils.parseEther('10000000000'));
+		});
+	})
+
+	describe('Farming rewards', function () {
+		let farmingRewardContract;
+		beforeEach(async function() {
+			const FarmingRewardContract = await ethers.getContractFactory('FarmingRewardContract');
+			farmingRewardContract = await FarmingRewardContract.deploy(erc20Contract.address, beneficiary.address);
+			await expect(erc20Contract.transfer(farmingRewardContract.address, ethers.utils.parseEther('100000000000')))
+				.to.emit(farmingRewardContract, 'TokenReceive')
+				.withArgs(ethers.utils.parseEther('100000000000'));
+		});
+
+		it ('owner is able to transfer ownership to owner2', async function() {
+			await expect(farmingRewardContract.transferOwnership(owner2.address))
+				.to.emit(farmingRewardContract, 'OwnershipTransferred')
+				.withArgs(owner.address, owner2.address);
+		})
+		it ('owner is able to pause the withdraw function', async function() {
+			await expect(farmingRewardContract.pause())
+				.to.emit(farmingRewardContract, 'Paused')
+				.withArgs(owner.address);
+		})
+		it ('owner is able to pause the availableAmount function', async function() {
+			await expect(farmingRewardContract.pause())
+				.to.emit(farmingRewardContract, 'Paused')
+				.withArgs(owner.address);
+		})
+		it ('Reverts execution of withdraw function when paused', async function() {
+			await expect(farmingRewardContract.pause())
+				.to.emit(farmingRewardContract, 'Paused')
+				.withArgs(owner.address);
+			await expect(farmingRewardContract.withdraw())
+				.to.be.revertedWith('Pausable: paused');
+		})
+		it ('Reverts execution of availableAmount function when paused', async function() {
+			await expect(farmingRewardContract.pause())
+				.to.emit(farmingRewardContract, 'Paused')
+				.withArgs(owner.address);
+			await expect(farmingRewardContract.availableAmount())
+				.to.be.revertedWith('Pausable: paused');
+		})
+		it('owner successfully claim tokens', async function() {
+			await expect(farmingRewardContract.withdraw())
+				.to.emit(farmingRewardContract, 'TokenWithdraw')
+				.withArgs(ethers.utils.parseEther('100000000000'));
+			expect(await erc20Contract.balanceOf(beneficiary.address))
+				.to.equal(ethers.utils.parseEther('100000000000'));
 		});
 	})
 })

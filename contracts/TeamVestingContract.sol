@@ -29,6 +29,8 @@ contract TeamVestingContract is IERC20Recipient, Ownable, Pausable {
     event TokenWithdraw(uint256 amount);
     event Revoke(address account);
 
+    /// @notice Constructor
+    /// @param _token ERC20 token
     constructor(
         IERC20 _token
     ) {
@@ -39,6 +41,9 @@ contract TeamVestingContract is IERC20Recipient, Ownable, Pausable {
         totalWithdrawAmount = 0;
     }
 
+    /// @notice Token receive fallback function
+    /// @param _from Sender addres
+    /// @param _value Transaction amount
     function tokenFallback(address _from, uint256 _value) public override {
         require(_from == owner(), 'Money must be transferred from token contract address');
         require(TOTAL_AMOUNT.add(_value) <= 100000000000 * 10 ** 18, 'After adding the tobe transferred amount with the current TOTAL_AMOUNT, it must be <= 100 Billions for team vesting');
@@ -46,6 +51,10 @@ contract TeamVestingContract is IERC20Recipient, Ownable, Pausable {
         emit TokenReceive(_value);
     }
 
+    /// @notice Vesting function
+    /// @param releaseTime Vesting unlock time
+    /// @param account Vesting owner address
+    /// @param amount Vesting amount
     function vesting(uint256 releaseTime, address account, uint256 amount) public onlyOwner whenNotPaused {
         require(totalVestedAmount.add(amount) <= TOTAL_AMOUNT, 'TOTAL_AMOUNT is already vested');
 
@@ -56,6 +65,8 @@ contract TeamVestingContract is IERC20Recipient, Ownable, Pausable {
         emit TokenVest(totalVestedAmount);
     }
 
+    /// @notice Revoke vesting
+    /// @param account Vesting owner address
     function revoke(address account) public onlyOwner whenNotPaused {
         require(revokes[account] == false, 'Account was revoked already');
         for (uint i = 0; i < timelocks.length; i++) {
@@ -67,6 +78,8 @@ contract TeamVestingContract is IERC20Recipient, Ownable, Pausable {
         emit Revoke(account);
     }
 
+    /// @notice Calculate claimable amount
+    /// @param account Vesting owner address
     function claimableAmount(address account) public view onlyOwner whenNotPaused returns(uint256) {
         uint256 sum = 0;
         for (uint i = 0; i < timelocks.length; i++) {
@@ -77,6 +90,8 @@ contract TeamVestingContract is IERC20Recipient, Ownable, Pausable {
         return sum;
     }
 
+    /// @notice Withdraw vesting
+    /// @param account Vesting owner address
     function withdraw(address account) public onlyOwner whenNotPaused {
         uint256 amount = claimableAmount(account);
         require(amount > 0, "Claimable amount is zero");
@@ -93,10 +108,12 @@ contract TeamVestingContract is IERC20Recipient, Ownable, Pausable {
         emit TokenWithdraw(amount);
     }
 
+    /// @notice Pause contract
     function pause() public onlyOwner whenNotPaused {
         _pause();
     }
 
+    /// @notice Unpause contract
     function unpause() public onlyOwner whenPaused {
         _unpause();
     }

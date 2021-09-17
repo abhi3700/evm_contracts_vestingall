@@ -10,7 +10,7 @@ import "hardhat/console.sol";
 import "./IERC20Recipient.sol";
 import './TimelockContract.sol';
 
-contract MarketingContract is IERC20Recipient, Ownable, Pausable {
+contract DevelopmentFundContract is IERC20Recipient, Ownable, Pausable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -36,6 +36,7 @@ contract MarketingContract is IERC20Recipient, Ownable, Pausable {
     ) {
         vestingToken = _token;
 
+        TOTAL_AMOUNT = 0;
         totalVestedAmount = 0;
         totalWithdrawAmount = 0;
     }
@@ -45,7 +46,7 @@ contract MarketingContract is IERC20Recipient, Ownable, Pausable {
     /// @param _value Transaction amount
     function tokenFallback(address _from, uint256 _value) public override {
         require(_from == owner(), 'Money must be transferred from token contract address');
-        require(TOTAL_AMOUNT.add(_value) <= 50000000000 * 10 ** 18, 'After adding the tobe transferred amount with the current TOTAL_AMOUNT, it must be <= 50 Billions for marketing');
+        require(TOTAL_AMOUNT.add(_value) <= 150000000000 * 10 ** 18, 'After adding the tobe transferred amount with the current TOTAL_AMOUNT, it must be <= 150 Billions for development fund');
         TOTAL_AMOUNT = TOTAL_AMOUNT.add(_value);
         emit TokenReceive(_value);
     }
@@ -55,7 +56,7 @@ contract MarketingContract is IERC20Recipient, Ownable, Pausable {
     /// @param account Vesting owner address
     /// @param amount Vesting amount
     function vesting(uint256 releaseTime, address account, uint256 amount) public onlyOwner whenNotPaused {
-        require(totalVestedAmount.add(amount) <= vestingToken.balanceOf(address(this)), 'TOTAL_AMOUNT is already vested');
+        require(totalVestedAmount.add(amount) <= TOTAL_AMOUNT, 'TOTAL_AMOUNT is already vested');
 
         TimelockContract newVesting = new TimelockContract(account, amount, releaseTime);
         timelocks.push(newVesting);

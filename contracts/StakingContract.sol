@@ -24,6 +24,10 @@ contract StakingContract is IERC20Recipient, Ownable, Pausable {
     event TokenWithdraw(uint256 amount);
     event ReleaseTimeChange(uint256 _releaseTime);
 
+    /// @notice Constructor
+    /// @param _token ERC20 token
+    /// @param _beneficiary Beneficiary address
+    /// @param _releaseTime Unlock time
     constructor(
         IERC20 _token,
         address _beneficiary,
@@ -38,6 +42,9 @@ contract StakingContract is IERC20Recipient, Ownable, Pausable {
         totalWithdrawAmount = 0;
     }
 
+    /// @notice Token receive fallback function
+    /// @param _from Sender addres
+    /// @param _value Transaction amount
     function tokenFallback(address _from, uint256 _value) public override {
         require(_from == owner(), 'Money must be transferred from token contract address');
         require(TOTAL_AMOUNT.add(_value) <= 100000000000 * 10 ** 18, 'After adding the tobe transferred amount with the current TOTAL_AMOUNT, it must be <= 100 Billions for in-app stacking');
@@ -45,16 +52,20 @@ contract StakingContract is IERC20Recipient, Ownable, Pausable {
         emit TokenReceive(_value);
     }
 
+    /// @notice Change unlock time
+    /// @param _releaseTime Unlock time
     function setReleaseTime(uint256 _releaseTime) public onlyOwner whenNotPaused {
         releaseTime = _releaseTime;
         emit ReleaseTimeChange(releaseTime);
     }
 
+    /// @notice Calculate available amount
     function availableAmount() public view onlyOwner whenNotPaused returns(uint256) {
         if (releaseTime > block.timestamp) return 0;
         return vestingToken.balanceOf(address(this));
     }
 
+    /// @notice Withdraw
     function withdraw() public onlyOwner whenNotPaused {
         uint256 amount = availableAmount();
         require(amount > 0, "Available amount is zero");
@@ -64,10 +75,12 @@ contract StakingContract is IERC20Recipient, Ownable, Pausable {
         emit TokenWithdraw(amount);
     }
 
+    /// @notice Pause contract  
     function pause() public onlyOwner whenNotPaused {
         _pause();
     }
 
+    /// @notice Unpause contract
     function unpause() public onlyOwner whenPaused {
         _unpause();
     }
