@@ -29,7 +29,7 @@ contract MisBlockBase is ERC20, Ownable {
         return true;
     }
 
-    function transferByVesting(address _to, uint256 _amount) public returns (bool success) {
+    function transferByVestingC(address _to, uint256 _amount) public returns (bool success) {
         _transfer(_msgSender(), _to, _amount);
         emit Transfer(_msgSender(), _to, _amount);
         return true;
