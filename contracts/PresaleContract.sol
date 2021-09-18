@@ -21,16 +21,14 @@ contract PresaleContract is IVestingContract, Ownable, Pausable {
     uint256 public totalVestedAmount;
     uint256 public totalClaimedAmount;
 
-    mapping(address => bool) revokes;
-
     TimelockContract[] timelocks;
 
+    // EVENTS
     event UpdateMaximumVestingAmount(address caller, uint256 amount, uint256 currentTimestamp);
     event TokenVest(uint256 amount);
     event TokenClaim(uint256 amount);
     event TokenVesting(address indexed claimerAddress, uint256 amount, uint256 unlockTimestamp, uint256 currentTimestamp);
     event TokenClaimed(address indexed claimerAddress, uint256 amount, uint256 currentTimestamp);
-    event Revoke(address account);
 
     /// @notice Constructor
     /// @param _token ERC20 token
