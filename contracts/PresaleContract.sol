@@ -45,7 +45,9 @@ contract PresaleContract is IVestingContract, Ownable, Pausable {
     /// @notice Update vesting contract maximum amount after send transaction
     /// @param _amountTransferred Transferred amount. This can be modified by the owner 
     ///        so as to increase the max vesting amount
-    function updateMaxVestingAmount(uint256 _amountTransferred) public override onlyOwner whenNotPaused {
+    function updateMaxVestingAmount(uint256 _amountTransferred) public override whenNotPaused {
+        require(msg.sender == address(vestingToken), "the caller is the token contract");
+        
         maxVestingAmount = maxVestingAmount.add(_amountTransferred);
         emit UpdateMaximumVestingAmount(msg.sender, _amountTransferred, block.timestamp);
     }
