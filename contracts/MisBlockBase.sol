@@ -4,7 +4,7 @@ pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import '@openzeppelin/contracts/access/Ownable.sol';
-import "./IERC20Recipient.sol";
+import "./IVestingContract.sol";
 
 contract MisBlockBase is ERC20, Ownable {
     constructor() ERC20("UNICOIN", "UNICN") {
@@ -19,13 +19,19 @@ contract MisBlockBase is ERC20, Ownable {
         return (size > 0);
     }
 
-    function transfer(address _to, uint256 _value) public virtual override returns (bool success){
-        _transfer(_msgSender(), _to, _value);
+    function transferForVesting(address _to, uint256 _amount) public returns (bool success) {
+        _transfer(_msgSender(), _to, _amount);
         if (isContract(_to)) {
-            IERC20Recipient receiver = IERC20Recipient(_to);
-            receiver.tokenFallback(_msgSender(), _value);
+            IVestingContract receiver = IVestingContract(_to);
+            receiver.updateMaximumAmount(_amount);
         }
-        emit Transfer(_msgSender(), _to, _value);
+        emit Transfer(_msgSender(), _to, _amount);
+        return true;
+    }
+
+    function transferByVesting(address _to, uint256 _amount) public returns (bool success) {
+        _transfer(_msgSender(), _to, _amount);
+        emit Transfer(_msgSender(), _to, _amount);
         return true;
     }
 }

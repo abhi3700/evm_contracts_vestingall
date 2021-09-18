@@ -14,10 +14,6 @@ contract ManualBurningContract is Ownable, Pausable {
     address public beneficiary;
     IERC20 public vestingToken;
 
-    uint256 public totalWithdrawAmount;
-
-    event TokenWithdraw(uint256 amount);
-
     constructor(
         address _beneficiary,
         IERC20 _token
@@ -26,22 +22,8 @@ contract ManualBurningContract is Ownable, Pausable {
 
         beneficiary = _beneficiary;
         vestingToken = _token;
-
-        totalWithdrawAmount = 0;
     }
     
-    function availableAmount() public view onlyOwner whenNotPaused returns(uint256) {
-        return vestingToken.balanceOf(address(this));
-    }
-
-    function withdraw() public onlyOwner whenNotPaused {
-        uint256 amount = availableAmount();
-        require(amount > 0, "Available amount is zero");
-
-        vestingToken.safeTransfer(beneficiary, amount);
-        totalWithdrawAmount = totalWithdrawAmount.add(amount);
-        emit TokenWithdraw(amount);
-    }
 
     function pause() public onlyOwner whenNotPaused {
         _pause();

@@ -7,21 +7,28 @@ import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import "hardhat/console.sol";
 
-import "./IERC20Recipient.sol";
+import "./IVestingContract.sol";
+import "./MisBlockBase.sol";
 
-contract StakingContract is IERC20Recipient, Ownable, Pausable {
+contract StakingContract is IVestingContract, Ownable, Pausable {
+   
+    modifier onlyBeneficiary() {
+        require(msg.sender == beneficiary, 'Caller should be beneficiary');
+        _;
+    }
+
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     address public beneficiary;
-    IERC20 public vestingToken;
+    MisBlockBase public vestingToken;
 
-    uint256 public TOTAL_AMOUNT;
+    uint256 public maximumAmount;
     uint256 public releaseTime;
-    uint256 public totalWithdrawAmount;
+    uint256 public totalClaimedAmount;
 
-    event TokenReceive(uint256 amount);
-    event TokenWithdraw(uint256 amount);
+    event UpdateMaximumAmount(uint256 amount);
+    event TokenClaim(uint256 amount);
     event ReleaseTimeChange(uint256 _releaseTime);
 
     /// @notice Constructor
@@ -29,7 +36,7 @@ contract StakingContract is IERC20Recipient, Ownable, Pausable {
     /// @param _beneficiary Beneficiary address
     /// @param _releaseTime Unlock time
     constructor(
-        IERC20 _token,
+        MisBlockBase _token,
         address _beneficiary,
         uint256 _releaseTime
     ) {
@@ -39,17 +46,15 @@ contract StakingContract is IERC20Recipient, Ownable, Pausable {
         vestingToken = _token;
         releaseTime = _releaseTime;
 
-        totalWithdrawAmount = 0;
+        maximumAmount = 0;
+        totalClaimedAmount = 0;
     }
 
-    /// @notice Token receive fallback function
-    /// @param _from Sender addres
-    /// @param _value Transaction amount
-    function tokenFallback(address _from, uint256 _value) public override {
-        require(_from == owner(), 'Money must be transferred from token contract address');
-        require(TOTAL_AMOUNT.add(_value) <= 100000000000 * 10 ** 18, 'After adding the tobe transferred amount with the current TOTAL_AMOUNT, it must be <= 100 Billions for in-app stacking');
-        TOTAL_AMOUNT = TOTAL_AMOUNT.add(_value);
-        emit TokenReceive(_value);
+    /// @notice Update vesting contract maximum amount after send transaction
+    /// @param _maximumAmount Maximun amount
+    function updateMaximumAmount(uint256 _maximumAmount) public override {
+        maximumAmount = _maximumAmount;
+        emit UpdateMaximumAmount(maximumAmount);
     }
 
     /// @notice Change unlock time
@@ -59,20 +64,20 @@ contract StakingContract is IERC20Recipient, Ownable, Pausable {
         emit ReleaseTimeChange(releaseTime);
     }
 
-    /// @notice Calculate available amount
-    function availableAmount() public view onlyOwner whenNotPaused returns(uint256) {
+    /// @notice Calculate claimable amount
+    function claimableAmount() public view onlyBeneficiary whenNotPaused returns(uint256) {
         if (releaseTime > block.timestamp) return 0;
         return vestingToken.balanceOf(address(this));
     }
 
-    /// @notice Withdraw
-    function withdraw() public onlyOwner whenNotPaused {
-        uint256 amount = availableAmount();
-        require(amount > 0, "Available amount is zero");
+    /// @notice Claim
+    function claim() public onlyBeneficiary whenNotPaused {
+        uint256 amount = claimableAmount();
+        require(amount > 0, "Claimable amount is zero");
 
-        vestingToken.safeTransfer(beneficiary, amount);
-        totalWithdrawAmount = totalWithdrawAmount.add(amount);
-        emit TokenWithdraw(amount);
+        vestingToken.transferByVesting(msg.sender, amount);
+        totalClaimedAmount = totalClaimedAmount.add(amount);
+        emit TokenClaim(amount);
     }
 
     /// @notice Pause contract  

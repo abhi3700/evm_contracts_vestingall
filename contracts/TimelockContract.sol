@@ -16,6 +16,11 @@ contract TimelockContract is Ownable {
     bool public released;
     bool public revoked;
 
+
+    /// @notice Constructor
+    /// @param _beneficiary Beneficiary address
+    /// @param _amount Timelock amount
+    /// @param _releaseTime unlock time
     constructor(
         address _beneficiary,
         uint256 _amount,
@@ -28,6 +33,7 @@ contract TimelockContract is Ownable {
         revoked = false;
     }
 
+    /// @notice Check releaseable
     function releaseable() public view onlyOwner returns(bool) {
         if (released || revoked) return false;
         if (block.timestamp < releaseTime) return false;
@@ -35,15 +41,18 @@ contract TimelockContract is Ownable {
         return true;
     }
 
+    /// @notice Calculate releaseable amount
     function releaseableAmount() public view onlyOwner returns(uint256) {
         if (releaseable()) return amount;
         return 0;
     }
 
+    /// @notice Revoke timelock
     function revoke() public onlyOwner {
         revoked = true;
     }
 
+    /// @notice Release Timelock
     function release() public payable onlyOwner {
         require(releaseable(), 'Can not release token');
         released = true;
