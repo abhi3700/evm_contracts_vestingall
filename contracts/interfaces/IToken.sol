@@ -4,7 +4,7 @@ pragma solidity ^0.8.2;
 
 
 interface IToken {
-  // function balanceOf(address owner) external view returns (unit);
+  function balanceOf(address owner) external view returns (unit);
   // function allowance(address owner, address spender) external view returns (unit);
   // function approve(address spender, uint value) external returns (bool);
   // function transfer(address to, uint value) external returns (bool);

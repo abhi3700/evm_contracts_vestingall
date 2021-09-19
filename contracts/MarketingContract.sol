@@ -6,14 +6,13 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 
-import "./IVestingContract.sol";
 import './TimelockContract.sol';
-import "./MisBlockBase.sol";
+import "./interfaces/IToken.sol";
 
-contract MarketingContract is IVestingContract, Ownable, Pausable {
+contract MarketingContract is Ownable, Pausable {
     using SafeMath for uint256;
 
-    MisBlockBase public vestingToken;
+    IToken public vestingToken;
 
     uint256 public maxVestingAmount;
     uint256 public totalVestedAmount;
@@ -22,7 +21,7 @@ contract MarketingContract is IVestingContract, Ownable, Pausable {
     TimelockContract[] timelocks;
 
     // EVENTS
-    event UpdateMaximumVestingAmount(address caller, uint256 amount, uint256 currentTimestamp);
+    event UpdateMaxVestingAmount(address caller, uint256 amount, uint256 currentTimestamp);
     event TokenVesting(address indexed claimerAddress, uint256 amount, uint256 unlockTimestamp, uint256 currentTimestamp);
     event TokenClaimed(address indexed claimerAddress, uint256 amount, uint256 currentTimestamp);
 
@@ -31,6 +30,7 @@ contract MarketingContract is IVestingContract, Ownable, Pausable {
     constructor(
         MisBlockBase _token
     ) {
+        require(address(_token) != address(0), "Invalid address");
         vestingToken = _token;
 
         maxVestingAmount = 0;
@@ -41,10 +41,13 @@ contract MarketingContract is IVestingContract, Ownable, Pausable {
     /// @notice Update vesting contract maximum amount after send transaction
     /// @param _amountTransferred Transferred amount. This can be modified by the owner 
     ///        so as to increase the max vesting amount
-    function updateMaxVestingAmount(uint256 _amountTransferred) public override whenNotPaused {
-        require(msg.sender == address(vestingToken), 'The caller is the token contract');
+    function updateMaxVestingAmount(uint256 _amountTransferred) external whenNotPaused returns (bool) {
+        require(msg.sender == address(vestingToken), "The caller is the token contract");
+
         maxVestingAmount = maxVestingAmount.add(_amountTransferred);
-        emit UpdateMaximumVestingAmount(msg.sender, _amountTransferred, block.timestamp);
+
+        emit UpdateMaxVestingAmount(msg.sender, _amountTransferred, block.timestamp);
+        return true;
     }
 
     /// @notice Vest function only accessed by owner
@@ -83,7 +86,7 @@ contract MarketingContract is IVestingContract, Ownable, Pausable {
     /// @notice Claim vesting
     /// @dev Anyone can claim claimableAmount which was vested
     /// @param token Vesting token contract
-    function claim(IERC20 token) external whenNotPaused {
+    function claim(IToken token) external whenNotPaused {
         require(token == vestingToken, "invalid token address");
 
         uint256 amount = _claimableAmount(msg.sender);

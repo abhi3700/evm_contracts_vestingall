@@ -29,6 +29,7 @@ contract PresaleContract is Ownable, Pausable {
     constructor(
         IToken _token
     ) {
+        require(address(_token) != address(0), "Invalid address");
         vestingToken = _token;
 
         maxVestingAmount = 0;
