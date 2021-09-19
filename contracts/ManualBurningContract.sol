@@ -18,7 +18,7 @@ contract ManualBurningContract is Ownable, Pausable {
         address _beneficiary,
         IERC20 _token
     ) {
-        require(_beneficiary != address(0), 'Invalid address');
+        require(_beneficiary != address(0), 'invalid address');
 
         beneficiary = _beneficiary;
         vestingToken = _token;

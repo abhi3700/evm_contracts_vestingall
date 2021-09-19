@@ -11,24 +11,23 @@ import "./IVestingContract.sol";
 import "./MisBlockBase.sol";
 
 contract StakingContract is IVestingContract, Ownable, Pausable {
-   
-    modifier onlyBeneficiary() {
+   modifier onlyBeneficiary() {
         require(msg.sender == beneficiary, 'Caller should be beneficiary');
         _;
     }
 
     using SafeMath for uint256;
-    using SafeERC20 for IERC20;
 
     address public beneficiary;
     MisBlockBase public vestingToken;
 
-    uint256 public maximumAmount;
+    uint256 public maxVestingAmount;
     uint256 public releaseTime;
     uint256 public totalClaimedAmount;
 
-    event UpdateMaximumAmount(uint256 amount);
-    event TokenClaim(uint256 amount);
+    // EVENTS
+    event UpdateMaximumVestingAmount(address caller, uint256 amount, uint256 currentTimestamp);
+    event TokenClaimed(uint256 amount);
     event ReleaseTimeChange(uint256 _releaseTime);
 
     /// @notice Constructor
@@ -46,15 +45,17 @@ contract StakingContract is IVestingContract, Ownable, Pausable {
         vestingToken = _token;
         releaseTime = _releaseTime;
 
-        maximumAmount = 0;
+        maxVestingAmount = 0;
         totalClaimedAmount = 0;
     }
 
     /// @notice Update vesting contract maximum amount after send transaction
-    /// @param _maximumAmount Maximun amount
-    function updateMaximumAmount(uint256 _maximumAmount) public override {
-        maximumAmount = _maximumAmount;
-        emit UpdateMaximumAmount(maximumAmount);
+    /// @param _amountTransferred Transferred amount. This can be modified by the owner 
+    ///        so as to increase the max vesting amount
+    function updateMaxVestingAmount(uint256 _amountTransferred) public override whenNotPaused {
+        require(msg.sender == address(vestingToken), 'The caller is the token contract');
+        maxVestingAmount = maxVestingAmount.add(_amountTransferred);
+        emit UpdateMaximumVestingAmount(msg.sender, _amountTransferred, block.timestamp);
     }
 
     /// @notice Change unlock time
@@ -65,19 +66,21 @@ contract StakingContract is IVestingContract, Ownable, Pausable {
     }
 
     /// @notice Calculate claimable amount
-    function claimableAmount() public view onlyBeneficiary whenNotPaused returns(uint256) {
+    function claimableAmount() public view whenNotPaused returns(uint256) {
         if (releaseTime > block.timestamp) return 0;
         return vestingToken.balanceOf(address(this));
     }
 
     /// @notice Claim
-    function claim() public onlyBeneficiary whenNotPaused {
+    function claim(MisBlockBase token) public onlyBeneficiary whenNotPaused {
+        require(token == vestingToken, 'invalid token address');
         uint256 amount = claimableAmount();
-        require(amount > 0, "Claimable amount is zero");
+        require(amount > 0, "Claimable amount must be positive");
+        require(amount <= maxVestingAmount, "Can not withdraw more than total vested amount");
 
-        vestingToken.transferByVesting(msg.sender, amount);
+        vestingToken.transferByVestingC(msg.sender, amount);
         totalClaimedAmount = totalClaimedAmount.add(amount);
-        emit TokenClaim(amount);
+        emit TokenClaimed(amount);
     }
 
     /// @notice Pause contract  

@@ -5,7 +5,6 @@ pragma solidity ^0.8.4;
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
-import "hardhat/console.sol";
 
 import "./IVestingContract.sol";
 import './TimelockContract.sol';
@@ -13,7 +12,6 @@ import "./MisBlockBase.sol";
 
 contract PresaleContract is IVestingContract, Ownable, Pausable {
     using SafeMath for uint256;
-    // using SafeERC20 for IERC20;
 
     MisBlockBase public vestingToken;
 
@@ -25,8 +23,6 @@ contract PresaleContract is IVestingContract, Ownable, Pausable {
 
     // EVENTS
     event UpdateMaximumVestingAmount(address caller, uint256 amount, uint256 currentTimestamp);
-    event TokenVest(uint256 amount);
-    event TokenClaim(uint256 amount);
     event TokenVesting(address indexed claimerAddress, uint256 amount, uint256 unlockTimestamp, uint256 currentTimestamp);
     event TokenClaimed(address indexed claimerAddress, uint256 amount, uint256 currentTimestamp);
 
@@ -46,8 +42,7 @@ contract PresaleContract is IVestingContract, Ownable, Pausable {
     /// @param _amountTransferred Transferred amount. This can be modified by the owner 
     ///        so as to increase the max vesting amount
     function updateMaxVestingAmount(uint256 _amountTransferred) public override whenNotPaused {
-        require(msg.sender == address(vestingToken), "the caller is the token contract");
-        
+        require(msg.sender == address(vestingToken), "The caller is the token contract");
         maxVestingAmount = maxVestingAmount.add(_amountTransferred);
         emit UpdateMaximumVestingAmount(msg.sender, _amountTransferred, block.timestamp);
     }
@@ -91,7 +86,7 @@ contract PresaleContract is IVestingContract, Ownable, Pausable {
     function claim(IERC20 token) external whenNotPaused {
         require(token == vestingToken, "invalid token address");
 
-        uint256 amount = claimableAmount(msg.sender);
+        uint256 amount = _claimableAmount(msg.sender);
         require(amount > 0, "Claimable amount must be positive");
         require(amount <= totalVestedAmount, "Can not withdraw more than total vested amount");
 

@@ -19,11 +19,11 @@ contract MisBlockBase is ERC20, Ownable {
         return (size > 0);
     }
 
-    function transferForVesting(address _to, uint256 _amount) public returns (bool success) {
+    function allowcateVesting(address _to, uint256 _amount) public returns (bool success) {
         _transfer(_msgSender(), _to, _amount);
         if (isContract(_to)) {
             IVestingContract receiver = IVestingContract(_to);
-            receiver.updateMaximumAmount(_amount);
+            receiver.updateMaxVestingAmount(_amount);
         }
         emit Transfer(_msgSender(), _to, _amount);
         return true;
