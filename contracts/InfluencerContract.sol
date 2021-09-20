@@ -7,8 +7,8 @@ import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import "hardhat/console.sol";
 
-import "./IToken.sol";
-import "./IVesting.sol";
+import "./interfaces/IToken.sol";
+import "./interfaces/IVesting.sol";
 
 contract InfluencerContract is IVesting, Ownable, Pausable {
     modifier onlyBeneficiary() {

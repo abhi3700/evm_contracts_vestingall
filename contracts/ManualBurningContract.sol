@@ -5,8 +5,8 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 
-import "./IToken.sol";
-import "./IVesting.sol";
+import "./interfaces/IToken.sol";
+import "./interfaces/IVesting.sol";
 
 contract ManualBurningContract is IVesting, Ownable, Pausable {
     using SafeMath for uint256;

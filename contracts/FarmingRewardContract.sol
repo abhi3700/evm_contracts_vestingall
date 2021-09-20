@@ -6,8 +6,8 @@ import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import "hardhat/console.sol";
 
-import "./IVesting.sol";
-import "./IToken.sol";
+import "./interfaces/IVesting.sol";
+import "./interfaces/IToken.sol";
 
 contract FarmingRewardContract is IVesting, Ownable, Pausable {
 

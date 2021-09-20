@@ -5,8 +5,8 @@ pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import '@openzeppelin/contracts/access/Ownable.sol';
 
-import "./IVesting.sol";
-import "./IToken.sol";
+import "./interfaces/IVesting.sol";
+import "./interfaces/IToken.sol";
 
 contract MisBlockBase is ERC20, Ownable, IToken {
     

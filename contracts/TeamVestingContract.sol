@@ -7,8 +7,8 @@ import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 
 import './TimelockContract.sol';
-import "./IToken.sol";
-import "./IVesting.sol";
+import "./interfaces/IToken.sol";
+import "./interfaces/IVesting.sol";
 
 contract TeamVestingContract is IVesting, Ownable, Pausable {
     using SafeMath for uint256;
