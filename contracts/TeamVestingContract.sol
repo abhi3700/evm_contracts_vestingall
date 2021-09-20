@@ -7,9 +7,10 @@ import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 
 import './TimelockContract.sol';
-import "./interfaces/IToken.sol";
+import "./IToken.sol";
+import "./IVesting.sol";
 
-contract TeamVestingContract is Ownable, Pausable {
+contract TeamVestingContract is IVesting, Ownable, Pausable {
     using SafeMath for uint256;
 
     IToken public vestingToken;
@@ -43,7 +44,7 @@ contract TeamVestingContract is Ownable, Pausable {
     /// @notice Update vesting contract maximum amount after send transaction
     /// @param _amountTransferred Transferred amount. This can be modified by the owner 
     ///        so as to increase the max vesting amount
-    function updateMaxVestingAmount(uint256 _amountTransferred) external whenNotPaused returns (bool) {
+    function updateMaxVestingAmount(uint256 _amountTransferred) override external whenNotPaused returns(bool) {
         require(msg.sender == address(vestingToken), "The caller is the token contract");
 
         maxVestingAmount = maxVestingAmount.add(_amountTransferred);

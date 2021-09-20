@@ -6,10 +6,10 @@ import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import "hardhat/console.sol";
 
-import "./IVestingContract.sol";
-import "./MisBlockBase.sol";
+import "./IVesting.sol";
+import "./IToken.sol";
 
-contract FarmingRewardContract is IVestingContract, Ownable, Pausable {
+contract FarmingRewardContract is IVesting, Ownable, Pausable {
 
     modifier onlyBeneficiary() {
         require(msg.sender == beneficiary, 'Caller should be beneficiary');
@@ -52,7 +52,7 @@ contract FarmingRewardContract is IVestingContract, Ownable, Pausable {
     /// @notice Update vesting contract maximum amount after send transaction
     /// @param _amountTransferred Transferred amount. This can be modified by the owner 
     ///        so as to increase the max vesting amount
-    function updateMaxVestingAmount(uint256 _amountTransferred) external whenNotPaused returns (bool) {
+    function updateMaxVestingAmount(uint256 _amountTransferred) override external whenNotPaused returns (bool) {
         require(msg.sender == address(vestingToken), "The caller is the token contract");
 
         maxVestingAmount = maxVestingAmount.add(_amountTransferred);
