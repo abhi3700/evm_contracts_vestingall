@@ -51,7 +51,7 @@ contract StakingContract is IVesting, Ownable, Pausable {
     }
 
     /// @notice Update vesting contract maximum amount after send transaction
-    /// @param _amountTransferred Transferred amount. This can be modified by the owner 
+    /// @param _amountTransferred Transferred amount. This can be modified by the caller 
     ///        so as to increase the max vesting amount
     function updateMaxVestingAmount(uint256 _amountTransferred) override external whenNotPaused returns (bool) {
         require(msg.sender == address(vestingToken), "The caller is the token contract");
