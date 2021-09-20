@@ -411,7 +411,7 @@ describe('MIS Vesting contract unit testing', function() {
 		let farmingRewardContract;
 		beforeEach(async function() {
 			const FarmingRewardContract = await ethers.getContractFactory('FarmingRewardContract');
-			farmingRewardContract = await FarmingRewardContract.deploy(erc20Contract.address, beneficiary.address, new Date(2022, 1, 18).getTime() / 1000);
+			farmingRewardContract = await FarmingRewardContract.deploy(erc20Contract.address, beneficiary.address);
 			await expect(erc20Contract.allocateVesting(farmingRewardContract.address, ethers.utils.parseEther('100000000000')))
 				.to.emit(farmingRewardContract, 'UpdateMaxVestingAmount');
 		});
@@ -420,11 +420,6 @@ describe('MIS Vesting contract unit testing', function() {
 			await expect(farmingRewardContract.transferOwnership(owner2.address))
 				.to.emit(farmingRewardContract, 'OwnershipTransferred')
 				.withArgs(owner.address, owner2.address);
-		})
-		it ('owner is able to pause the setReleaseTime function', async function() {
-			await expect(farmingRewardContract.pause())
-				.to.emit(farmingRewardContract, 'Paused')
-				.withArgs(owner.address);
 		})
 		it ('owner is able to pause the claim function', async function() {
 			await expect(farmingRewardContract.pause())
@@ -435,13 +430,6 @@ describe('MIS Vesting contract unit testing', function() {
 			await expect(farmingRewardContract.pause())
 				.to.emit(farmingRewardContract, 'Paused')
 				.withArgs(owner.address);
-		})
-		it ('Reverts execution of setReleaseTime function when paused', async function() {
-			await expect(farmingRewardContract.pause())
-				.to.emit(farmingRewardContract, 'Paused')
-				.withArgs(owner.address);
-			await expect(farmingRewardContract.setReleaseTime(new Date(2022, 1, 18).getTime() / 1000))
-				.to.be.revertedWith('Pausable: paused');
 		})
 		it ('Reverts execution of claim function when paused', async function() {
 			await expect(farmingRewardContract.pause())
@@ -458,8 +446,6 @@ describe('MIS Vesting contract unit testing', function() {
 				.to.be.revertedWith('Pausable: paused');
 		})
 		it('beneficiary successfully claim tokens', async function() {
-			await expect(farmingRewardContract.setReleaseTime(new Date(2021, 1, 18).getTime() / 1000))
-				.to.emit(farmingRewardContract, 'ReleaseTimeChange');
 			await expect(farmingRewardContract.connect(beneficiary).claim(erc20Contract.address))
 				.to.emit(farmingRewardContract, 'TokenClaimed');
 			expect(await erc20Contract.balanceOf(beneficiary.address))
