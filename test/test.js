@@ -92,10 +92,19 @@ describe('MIS Vesting contract unit testing', function() {
 		it('addr1 successfully claim tokens', async function() {
 			await expect(teamVestingContract.vest(addr1.address, ethers.utils.parseEther('10000000000'), new Date(2022, 1, 18).getTime() / 1000))
 				.to.emit(teamVestingContract, 'TokenVesting');
-			// await expect(teamVestingContract.connect(addr1).claim(erc20Contract.address))
-			// 	.to.emit(teamVestingContract, 'TokenClaimed');
-			// expect(await erc20Contract.balanceOf(addr1.address))
-			// 	.to.equal(ethers.utils.parseEther('10000000000'));
+
+			await network.provider.send(
+				"evm_setNextBlockTimestamp", 
+				[new Date(2022, 1, 18).getTime() / 1000]);
+
+			await expect(teamVestingContract.connect(addr1).claim(erc20Contract.address))
+				.to.emit(teamVestingContract, 'TokenClaimed');
+			expect(await erc20Contract.balanceOf(addr1.address))
+				.to.equal(ethers.utils.parseEther('10000000000'));
+
+			await network.provider.request({
+				method: "hardhat_reset",
+				params: [{ timestamp: new Date().getTime() / 1000 }]});
 		});
 		it('owner is able to revoke a vesting', async function() {
 			await expect(teamVestingContract.vest(addr1.address, ethers.utils.parseEther('10000000000'), new Date(2022, 1, 18).getTime() / 1000))
@@ -238,10 +247,19 @@ describe('MIS Vesting contract unit testing', function() {
 		it('addr1 successfully claim tokens', async function() {
 			await expect(marketingContract.vest(addr1.address, ethers.utils.parseEther('10000000000'), new Date(2022, 1, 18).getTime() / 1000))
 				.to.emit(marketingContract, 'TokenVesting');
-			// await expect(marketingContract.connect(addr1).claim(erc20Contract.address))
-			// 	.to.emit(marketingContract, 'TokenClaimed');
-			// expect(await erc20Contract.balanceOf(addr1.address))
-			// 	.to.equal(ethers.utils.parseEther('10000000000'));
+
+			await network.provider.send(
+				"evm_setNextBlockTimestamp", 
+				[new Date(2022, 1, 18).getTime() / 1000]);
+
+			await expect(marketingContract.connect(addr1).claim(erc20Contract.address))
+				.to.emit(marketingContract, 'TokenClaimed');
+			expect(await erc20Contract.balanceOf(addr1.address))
+				.to.equal(ethers.utils.parseEther('10000000000'));
+
+			await network.provider.request({
+				method: "hardhat_reset",
+				params: [{ timestamp: new Date().getTime() / 1000 }]});
 		});
 	})
 
@@ -372,10 +390,19 @@ describe('MIS Vesting contract unit testing', function() {
 		it('addr1 successfully claim tokens', async function() {
 			await expect(presaleContract.vest(addr1.address, ethers.utils.parseEther('10000000000'), new Date(2022, 1, 18).getTime() / 1000))
 				.to.emit(presaleContract, 'TokenVesting');
-			// await expect(teamVestingContract.connect(addr1).claim(erc20Contract.address))
-			// 	.to.emit(teamVestingContract, 'TokenClaimed');
-			// expect(await erc20Contract.balanceOf(addr1.address))
-			// 	.to.equal(ethers.utils.parseEther('10000000000'));
+
+			await network.provider.send(
+				"evm_setNextBlockTimestamp", 
+				[new Date(2022, 1, 18).getTime() / 1000]);
+
+			await expect(presaleContract.connect(addr1).claim(erc20Contract.address))
+				.to.emit(presaleContract, 'TokenClaimed');
+			expect(await erc20Contract.balanceOf(addr1.address))
+				.to.equal(ethers.utils.parseEther('10000000000'));
+
+			await network.provider.request({
+				method: "hardhat_reset",
+				params: [{ timestamp: new Date().getTime() / 1000 }]});
 		});
 	})
 
@@ -506,10 +533,19 @@ describe('MIS Vesting contract unit testing', function() {
 		it('addr1 successfully claim tokens', async function() {
 			await expect(developmentFundContract.vest(addr1.address, ethers.utils.parseEther('10000000000'), new Date(2022, 1, 18).getTime() / 1000))
 				.to.emit(developmentFundContract, 'TokenVesting');
-			// await expect(teamVestingContract.connect(addr1).claim(erc20Contract.address))
-			// 	.to.emit(teamVestingContract, 'TokenClaimed');
-			// expect(await erc20Contract.balanceOf(addr1.address))
-			// 	.to.equal(ethers.utils.parseEther('10000000000'));
+
+			await network.provider.send(
+				"evm_setNextBlockTimestamp", 
+				[new Date(2022, 1, 18).getTime() / 1000]);
+
+			await expect(developmentFundContract.connect(addr1).claim(erc20Contract.address))
+				.to.emit(developmentFundContract, 'TokenClaimed');
+			expect(await erc20Contract.balanceOf(addr1.address))
+				.to.equal(ethers.utils.parseEther('10000000000'));
+
+			await network.provider.request({
+				method: "hardhat_reset",
+				params: [{ timestamp: new Date().getTime() / 1000 }]});
 		});
 	})
 })
