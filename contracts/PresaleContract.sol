@@ -44,10 +44,14 @@ contract PresaleContract is Ownable, Pausable {
     //================CONSTRUCTOR================================================================
     /// @notice Constructor
     /// @param _token ERC20 token
+    /// @param _maxVestingAmount max vesting amount. This is also updatable using `updateMaxVestingAmount` 
     constructor(
-        IERC20 _token
+        IERC20 _token,
+        uint256 _maxVestingAmount
     ) {
         require(address(_token) != address(0), "Invalid address");
+        require( _maxVestingAmount > 0, "max vesting amount must be positive");
+        
         vestingToken = _token;
 
         maxVestingAmount = 0;
@@ -56,17 +60,13 @@ contract PresaleContract is Ownable, Pausable {
     }
 
     //=================FUNCTIONS=================================================================
-    /// @notice Update vesting contract maximum amount after send tokens
-    /// @param _amount Transferred amount. This can be modified by the owner only 
+    /// @notice Update vesting contract maximum amount
+    /// @param _maxAmount amount. This can be modified by the owner only 
     ///        so as to increase the max vesting amount
-    function updateMaxVestingAmount(uint256 _amount) external onlyOwner whenNotPaused {
-        maxVestingAmount = maxVestingAmount.add(_amount);
+    function updateMaxVestingAmount(uint256 _maxAmount) external onlyOwner whenNotPaused {
+        maxVestingAmount = maxVestingAmount.add(_maxAmount);
 
-        // transfer to SC using delegate transfer
-        // NOTE: the tokens has to be approved first by the caller to the SC using `approve()` method.
-        vestingToken.transferFrom(msg.sender, address(this), _amount);
-
-        emit UpdateMaxVestingAmount(msg.sender, _amount, block.timestamp);
+        emit UpdateMaxVestingAmount(msg.sender, _maxAmount, block.timestamp);
     }
 
     // ------------------------------------------------------------------------------------------
