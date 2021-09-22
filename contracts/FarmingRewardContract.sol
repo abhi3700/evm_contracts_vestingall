@@ -4,42 +4,47 @@ pragma solidity ^0.8.4;
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
-import "hardhat/console.sol";
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
-import "./interfaces/IVesting.sol";
-import "./interfaces/IToken.sol";
-
-contract FarmingRewardContract is IVesting, Ownable, Pausable {
+/// @title Farming Reward Contract
+contract FarmingRewardContract is Ownable, Pausable {
+    using SafeMath for uint256;
+    using SafeERC20 for IERC20;
 
     modifier onlyBeneficiary() {
         require(msg.sender == beneficiary, 'Caller should be beneficiary');
         _;
     }
 
+    // State variables===================================================================================
     using SafeMath for uint256;
 
     address public beneficiary;
-    IToken public vestingToken;
+    IERC20 public vestingToken;
 
     uint256 public maxVestingAmount;
     uint256 public releaseTime;
     uint256 public totalClaimedAmount;
 
-    event UpdateMaxVestingAmount(address caller, uint256 amount, uint256 currentTimestamp);
+    // ===============EVENTS============================================================================================
+    event UpdatedMaxVestingAmount(address caller, uint256 amount, uint256 currentTimestamp);
     event TokenClaimed(address indexed claimerAddress, uint256 amount, uint256 currentTimestamp);
-    event ReleaseTimeChange(uint256 _releaseTime);
+    event ReleaseTimeChanged(uint256 _releaseTime);
 
     /// @notice Constructor
     /// @param _token token contract Interface
     /// @param _beneficiary Beneficiary address
     /// @param _releaseTime Unlock time
+    /// @param _maxVestingAmount max vesting amount. This is also updatable using `updateMaxVestingAmount` 
     constructor(
-        IToken _token,
+        IERC20 _token,
         address _beneficiary,
-        uint256 _releaseTime
+        uint256 _releaseTime,
+        uint256 _maxVestingAmount
     ) {
         require(address(_token) != address(0), "Invalid address");
         require(_beneficiary != address(0), 'Invalid address');
+        require( _maxVestingAmount > 0, "max vesting amount must be positive");
 
         beneficiary = _beneficiary;
         vestingToken = _token;
@@ -49,23 +54,21 @@ contract FarmingRewardContract is IVesting, Ownable, Pausable {
         totalClaimedAmount = 0;
     }
 
-    /// @notice Update vesting contract maximum amount after send transaction
-    /// @param _amountTransferred Transferred amount. This can be modified by the caller 
+    //=================FUNCTIONS=================================================================
+    /// @notice Update vesting contract maximum amount
+    /// @param _maxAmount amount. This can be modified by the owner only 
     ///        so as to increase the max vesting amount
-    function updateMaxVestingAmount(uint256 _amountTransferred) override external whenNotPaused returns (bool) {
-        require(msg.sender == address(vestingToken), "The caller is the token contract");
+    function updateMaxVestingAmount(uint256 _maxAmount) external onlyOwner whenNotPaused {
+        maxVestingAmount = maxVestingAmount.add(_maxAmount);
 
-        maxVestingAmount = maxVestingAmount.add(_amountTransferred);
-
-        emit UpdateMaxVestingAmount(msg.sender, _amountTransferred, block.timestamp);
-        return true;
+        emit UpdatedMaxVestingAmount(msg.sender, _maxAmount, block.timestamp);
     }
 
     /// @notice Change unlock time
     /// @param _releaseTime Unlock time
     function setReleaseTime(uint256 _releaseTime) public onlyOwner whenNotPaused {
         releaseTime = _releaseTime;
-        emit ReleaseTimeChange(releaseTime);
+        emit ReleaseTimeChanged(releaseTime);
     }
 
     /// @notice Calculate claimable amount
@@ -76,13 +79,15 @@ contract FarmingRewardContract is IVesting, Ownable, Pausable {
 
     /// @notice Claim vesting
     /// @dev Anyone can claim claimableAmount which was vested
-    /// @param token Vesting token contract
-    function claim(IToken token) public onlyBeneficiary whenNotPaused {
-        require(token == vestingToken, 'Invalid token address');
+    /// @param _token Vesting token contract
+    function claim(IERC20 _token) public onlyBeneficiary whenNotPaused {
+       require(vestingToken == _token, "invalid token address");
+
         uint256 amount = claimableAmount();
         require(amount > 0, "Claimable amount must be positive");
 
-        vestingToken.transferByVestingC(msg.sender, amount);
+        // transfer from SC
+        vestingToken.safeTransfer(msg.sender, amount);
         
         totalClaimedAmount = totalClaimedAmount.add(amount);
         

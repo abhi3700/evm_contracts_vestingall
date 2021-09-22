@@ -23,23 +23,14 @@ contract PresaleContract is Ownable, Pausable {
     struct Timelock {
         uint256 amount;
         uint256 releaseTimestamp;
-        // bool released;        // not needed, as this is checked by the condition if (currentTime ><= releaseTimestamp)
-        // bool revoked;        // is superseded by revokeTime (which is set in revokeTimes as mapping).
-        // uint256 isRevocable;     // 0 -> non-revocable, 1-> revocable 
     }
 
     mapping(address => Timelock[]) public timelocks;
-
-    // Now, no need of `revoked` param as:
-    // if (revokeTimes[addr] == 0) => the address is not revoked, else it's revoked.
-    // mapping(address => uint256) public revokeTimes;         // key: beneficiary address, value: revokeTimestamp
 
     // ===============EVENTS============================================================================================
     event UpdatedMaxVestingAmount(address caller, uint256 amount, uint256 currentTimestamp);
     event TokenVested(address indexed claimerAddress, uint256 amount, uint256 unlockTimestamp, uint256 currentTimestamp);
     event TokenClaimed(address indexed claimerAddress, uint256 amount, uint256 currentTimestamp);
-    // event Revoke(address indexed account, uint256 currentTimestamp);
-    // event Unrevoke(address indexed account, uint256 currentTimestamp);
 
     //================CONSTRUCTOR================================================================
     /// @notice Constructor
@@ -54,7 +45,7 @@ contract PresaleContract is Ownable, Pausable {
         
         vestingToken = _token;
 
-        maxVestingAmount = 0;
+        maxVestingAmount = _maxVestingAmount;
         totalVestedAmount = 0;
         totalClaimedAmount = 0;
     }
@@ -76,7 +67,7 @@ contract PresaleContract is Ownable, Pausable {
     /// @param _unlockTimestamp vesting unlock time
     function vest(address _beneficiary, uint256 _amount, uint256 _unlockTimestamp) external payable whenNotPaused {
         require(_beneficiary != address(0), "Invalid address");
-        require( _amount > 0, "amount must be positive");
+        require(_amount > 0, "amount must be positive");
         require(maxVestingAmount != 0, "maxVestingAmount is not yet set by admin.");
 
         require(totalVestedAmount.add(_amount) <= maxVestingAmount, 'maxVestingAmount is already vested');
@@ -94,35 +85,9 @@ contract PresaleContract is Ownable, Pausable {
         emit TokenVested(_beneficiary, _amount, _unlockTimestamp, block.timestamp);
     }
 
-    // ------------------------------------------------------------------------------------------
-/*    /// @notice Revoke vesting
-    /// @dev The vesting is revoked by setting the value of `revokeTimes` mapping as `revoke timestamp` 
-    /// @param _addr beneficiary address
-    function revoke(address _addr) public onlyOwner whenNotPaused {
-        require(revokeTimes[_addr] == 0, 'Account must not already be revoked.');
-
-        revokeTimes[_addr] = block.timestamp;
-        
-        emit Revoke(_addr, block.timestamp);
-    }
-*/
-    // ------------------------------------------------------------------------------------------
-/*    /// @notice Unrevoke vesting
-    /// @dev The vesting is unrevoked by setting the value of `revokeTimes` mapping as zero.
-    ///         This indicates that the beneficiary has able to claim. 
-    /// @param _addr beneficiary address
-    function unrevoke(address _addr) public onlyOwner whenNotPaused {
-        require(revokeTimes[_addr] != 0, 'Account must already be revoked.');
-
-        revokeTimes[_addr] = 0;
-        
-        emit Unrevoke(_addr, block.timestamp);
-    }
-
-*/    // ------------------------------------------------------------------------------------------
     /// @notice Calculate claimable amount for a beneficiary
     /// @param _addr beneficiary address
-    function claimableAmount(address _addr) public view returns (uint256) {
+    function claimableAmount(address _addr) public view whenNotPaused returns (uint256) {
         uint256 sum = 0;
 
         // iterate across all the vestings

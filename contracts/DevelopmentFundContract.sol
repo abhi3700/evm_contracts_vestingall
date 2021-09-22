@@ -4,108 +4,125 @@ pragma solidity ^0.8.4;
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
-import './TimelockContract.sol';
-import "./interfaces/IToken.sol";
-import "./interfaces/IVesting.sol";
-
-contract DevelopmentFundContract is IVesting, Ownable, Pausable {
+/// @title Presale Vesting Contract
+/// @dev Any address can vest tokens into this contract with amount, releaseTimestamp, revocable.
+///      Anyone can claim tokens (if unlocked as per the schedule).
+contract DevelopmentFundContract is Ownable, Pausable {
     using SafeMath for uint256;
+    using SafeERC20 for IERC20;
 
-    IToken public vestingToken;
+    // State variables===================================================================================
+    IERC20 public vestingToken;
 
     uint256 public maxVestingAmount;
     uint256 public totalVestedAmount;
     uint256 public totalClaimedAmount;
 
-    TimelockContract[] timelocks;
+    struct Timelock {
+        uint256 amount;
+        uint256 releaseTimestamp;
+    }
 
-    // EVENTS
-    event UpdateMaxVestingAmount(address caller, uint256 amount, uint256 currentTimestamp);
-    event TokenVesting(address indexed claimerAddress, uint256 amount, uint256 unlockTimestamp, uint256 currentTimestamp);
+    mapping(address => Timelock[]) public timelocks;
+
+    // ===============EVENTS============================================================================================
+    event UpdatedMaxVestingAmount(address caller, uint256 amount, uint256 currentTimestamp);
+    event TokenVested(address indexed claimerAddress, uint256 amount, uint256 unlockTimestamp, uint256 currentTimestamp);
     event TokenClaimed(address indexed claimerAddress, uint256 amount, uint256 currentTimestamp);
 
+    //================CONSTRUCTOR================================================================
     /// @notice Constructor
     /// @param _token ERC20 token
+    /// @param _maxVestingAmount max vesting amount. This is also updatable using `updateMaxVestingAmount` 
     constructor(
-        IToken _token
+        IERC20 _token,
+        uint256 _maxVestingAmount
     ) {
         require(address(_token) != address(0), "Invalid address");
+        require( _maxVestingAmount > 0, "max vesting amount must be positive");
+        
         vestingToken = _token;
 
-        maxVestingAmount = 0;
+        maxVestingAmount = _maxVestingAmount;
         totalVestedAmount = 0;
         totalClaimedAmount = 0;
     }
 
-    /// @notice Update vesting contract maximum amount after send transaction
-    /// @param _amountTransferred Transferred amount. This can be modified by the caller 
+    //=================FUNCTIONS=================================================================
+    /// @notice Update vesting contract maximum amount
+    /// @param _maxAmount amount. This can be modified by the owner only 
     ///        so as to increase the max vesting amount
-    function updateMaxVestingAmount(uint256 _amountTransferred) override external whenNotPaused returns (bool) {
-        require(msg.sender == address(vestingToken), "The caller is the token contract");
+    function updateMaxVestingAmount(uint256 _maxAmount) external onlyOwner whenNotPaused {
+        maxVestingAmount = maxVestingAmount.add(_maxAmount);
 
-        maxVestingAmount = maxVestingAmount.add(_amountTransferred);
-
-        emit UpdateMaxVestingAmount(msg.sender, _amountTransferred, block.timestamp);
-        return true;
+        emit UpdatedMaxVestingAmount(msg.sender, _maxAmount, block.timestamp);
     }
 
-    /// @notice Vest function only accessed by owner
-    /// @param _unlockTimestamp Presale unlock time
-    /// @param _addr claimer address
+    // ------------------------------------------------------------------------------------------
+    /// @notice Vest function accessed by anyone
+    /// @param _beneficiary beneficiary address
     /// @param _amount vesting amount
-    function vest(address _addr, uint256 _amount, uint256 _unlockTimestamp) external onlyOwner whenNotPaused {
-        require( _amount > 0, "amount must be positive");
+    /// @param _unlockTimestamp vesting unlock time
+    function vest(address _beneficiary, uint256 _amount, uint256 _unlockTimestamp) external payable whenNotPaused {
+        require(_beneficiary != address(0), "Invalid address");
+        require(_amount > 0, "amount must be positive");
+        require(maxVestingAmount != 0, "maxVestingAmount is not yet set by admin.");
+
         require(totalVestedAmount.add(_amount) <= maxVestingAmount, 'maxVestingAmount is already vested');
         require(_unlockTimestamp > block.timestamp, "unlock timestamp must be greater than the currrent");
 
-        TimelockContract newVesting = new TimelockContract(_addr, _amount, _unlockTimestamp);
-        timelocks.push(newVesting);
+        Timelock memory newVesting = Timelock(_amount, _unlockTimestamp);
+        timelocks[_beneficiary].push(newVesting);
 
         totalVestedAmount = totalVestedAmount.add(_amount);
-        emit TokenVesting(_addr, _amount, _unlockTimestamp, block.timestamp);
+
+        // transfer to SC using delegate transfer
+        // NOTE: the tokens has to be approved first by the caller to the SC using `approve()` method.
+        vestingToken.transferFrom(msg.sender, address(this), _amount);
+
+        emit TokenVested(_beneficiary, _amount, _unlockTimestamp, block.timestamp);
     }
 
-    /// @notice Calculate claimable amount
-    /// @param account Vesting owner address
-    function _claimableAmount(address account) internal view returns(uint256) {
+    /// @notice Calculate claimable amount for a beneficiary
+    /// @param _addr beneficiary address
+    function claimableAmount(address _addr) public view whenNotPaused returns (uint256) {
         uint256 sum = 0;
-        for (uint i = 0; i < timelocks.length; i++) {
-            if (timelocks[i].releaseable() && timelocks[i].beneficiary() == account) {
-                sum = sum.add(timelocks[i].releaseableAmount());
+
+        // iterate across all the vestings
+        // & check if the releaseTimestamp is elapsed
+        // then, add all the amounts as claimable amount
+        for (uint256 i = 0; i < timelocks[_addr].length; i++) {
+            if ( block.timestamp >= timelocks[_addr][i].releaseTimestamp ) {
+                sum = sum.add(timelocks[_addr][i].amount);
             }
         }
+
         return sum;
     }
 
-    /// @notice Calculate claimable amount
-    function claimableAmount() external view whenNotPaused returns(uint256) {
-        return _claimableAmount(msg.sender);
-    }
-
+    // ------------------------------------------------------------------------------------------
     /// @notice Claim vesting
-    /// @dev Anyone can claim claimableAmount which was vested
-    /// @param token Vesting token contract
-    function claim(IToken token) external whenNotPaused {
-        require(token == vestingToken, "invalid token address");
+    /// @dev Beneficiary can claim claimableAmount which was vested
+    /// @param _token Vesting token contract
+    function claim(IERC20 _token) external whenNotPaused {
+        require(vestingToken == _token, "invalid token address");
 
-        uint256 amount = _claimableAmount(msg.sender);
+        uint256 amount = claimableAmount(msg.sender);
         require(amount > 0, "Claimable amount must be positive");
-        require(amount <= totalVestedAmount, "Can not withdraw more than total vested amount");
+        require(amount <= totalVestedAmount, "Cannot withdraw more than the total vested amount");
 
-
-        for (uint i = 0; i < timelocks.length; ++i) {
-            if (timelocks[i].releaseable() && timelocks[i].beneficiary() == msg.sender) {
-                vestingToken.transferByVestingC(timelocks[i].beneficiary(), timelocks[i].amount());
-                timelocks[i].release();
-            }
-        }
-
+        // transfer from SC
+        vestingToken.safeTransfer(msg.sender, amount);
+        
         totalClaimedAmount = totalClaimedAmount.add(amount);
+
         emit TokenClaimed(msg.sender, amount, block.timestamp);
     }
 
-    /// @notice Pause contract
+    // ------------------------------------------------------------------------------------------
+    /// @notice Pause contract 
     function pause() public onlyOwner whenNotPaused {
         _pause();
     }

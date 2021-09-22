@@ -54,7 +54,7 @@ contract TeamVestingContract is Ownable, Pausable {
         
         vestingToken = _token;
 
-        maxVestingAmount = 0;
+        maxVestingAmount = _maxVestingAmount;
         totalVestedAmount = 0;
         totalClaimedAmount = 0;
     }
@@ -122,7 +122,7 @@ contract TeamVestingContract is Ownable, Pausable {
     // ------------------------------------------------------------------------------------------
     /// @notice Calculate claimable amount for a beneficiary
     /// @param _addr beneficiary address
-    function claimableAmount(address _addr) public view returns (uint256) {
+    function claimableAmount(address _addr) public view whenNotPaused returns (uint256) {
         uint256 sum = 0;
 
         // iterate across all the vestings
@@ -143,7 +143,7 @@ contract TeamVestingContract is Ownable, Pausable {
     /// @param _token Vesting token contract
     function claim(IERC20 _token) external whenNotPaused {
         require(vestingToken == _token, "invalid token address");
-        require(revokeTimes[msg.sender] == 0, 'Account must not already be revoked.');
+        require(revokeTimes[msg.sender] == 0, 'Account must not already be revoked');
 
         uint256 amount = claimableAmount(msg.sender);
         require(amount > 0, "Claimable amount must be positive");
