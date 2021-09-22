@@ -35,7 +35,7 @@ contract PresaleContract is Ownable, Pausable {
     // mapping(address => uint256) public revokeTimes;         // key: beneficiary address, value: revokeTimestamp
 
     // ===============EVENTS============================================================================================
-    event UpdateMaxVestingAmount(address caller, uint256 amount, uint256 currentTimestamp);
+    event UpdatedMaxVestingAmount(address caller, uint256 amount, uint256 currentTimestamp);
     event TokenVested(address indexed claimerAddress, uint256 amount, uint256 unlockTimestamp, uint256 currentTimestamp);
     event TokenClaimed(address indexed claimerAddress, uint256 amount, uint256 currentTimestamp);
     // event Revoke(address indexed account, uint256 currentTimestamp);
@@ -66,7 +66,7 @@ contract PresaleContract is Ownable, Pausable {
     function updateMaxVestingAmount(uint256 _maxAmount) external onlyOwner whenNotPaused {
         maxVestingAmount = maxVestingAmount.add(_maxAmount);
 
-        emit UpdateMaxVestingAmount(msg.sender, _maxAmount, block.timestamp);
+        emit UpdatedMaxVestingAmount(msg.sender, _maxAmount, block.timestamp);
     }
 
     // ------------------------------------------------------------------------------------------
