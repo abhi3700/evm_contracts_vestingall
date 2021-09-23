@@ -112,11 +112,11 @@ contract MarketingContract is Ownable, Pausable {
         uint256 amount = claimableAmount(msg.sender);
         require(amount > 0, "Claimable amount must be positive");
         require(amount <= totalVestedAmount, "Cannot withdraw more than the total vested amount");
+        
+        totalClaimedAmount = totalClaimedAmount.add(amount);
 
         // transfer from SC
         vestingToken.safeTransfer(msg.sender, amount);
-        
-        totalClaimedAmount = totalClaimedAmount.add(amount);
 
         emit TokenClaimed(msg.sender, amount, block.timestamp);
     }

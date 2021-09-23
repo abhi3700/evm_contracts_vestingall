@@ -85,11 +85,11 @@ contract FarmingRewardContract is Ownable, Pausable {
 
         uint256 amount = claimableAmount();
         require(amount > 0, "Claimable amount must be positive");
+        
+        totalClaimedAmount = totalClaimedAmount.add(amount);
 
         // transfer from SC
         vestingToken.safeTransfer(msg.sender, amount);
-        
-        totalClaimedAmount = totalClaimedAmount.add(amount);
         
         emit TokenClaimed(msg.sender, amount, block.timestamp);
     }
