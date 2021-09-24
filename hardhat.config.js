@@ -1,30 +1,44 @@
 require("@nomiclabs/hardhat-waffle");
-require("@nomiclabs/hardhat-etherscan");
-const { mnemonic, apiKey } = require('./secrets.json');
+require('dotenv').config();
+/**
+ * @type import('hardhat/config').HardhatUserConfig
+ */
+const INFURA_API_KEY = process.env.INFURA_API_KEY || "";
+const SPEEDY_NODE_KEY = process.env.SPEEDY_NODE_KEY || "";
+const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY || "";
 
 module.exports = {
-	solidity: {
-		version: "0.8.4",
-		settings: {
-			optimizer: {
-				enabled: true,
-				runs: 10
-			}
-		}
+  defaultNetwork: "hardhat",
+  networks: {
+    hardhat: {
+      forking: {
+        url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
+      }
+    },
+    rinkeby: {
+      url: `https://rinkeby.infura.io/v3/${INFURA_API_KEY}`,
+      accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
 	},
-	networks: {
-		testnet: {
-			url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
-			gas: 10000000,
-			accounts: { mnemonic: mnemonic }
-		},
-		main: {
-			url: "https://bsc-dataseed.binance.org/",
-			gas: 10000000,
-			accounts: { mnemonic: mnemonic }
-		}
-	},
-	etherscan: {
-		apiKey: apiKey
-	}
+    eth: {
+      url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
+      accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
+    },
+    bsctest: {
+      url: `https://data-seed-prebsc-1-s1.binance.org:8545/`,
+      accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
+    },
+    bsc: {
+      url: `https://bsc-dataseed.binance.org/`,
+      accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
+    },
+  },
+  solidity: {
+    version: "0.8.4",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
+  },
 };
