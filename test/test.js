@@ -131,66 +131,66 @@ describe('MIS Vesting contract unit testing', function() {
 		});
 	})
 
-	// // In-App Staking
-	// describe('In-App Staking', function () {
-	// 	let stakingContract;
-	// 	beforeEach(async function() {
-	// 		const StakingContract = await ethers.getContractFactory('StakingContract');
-	// 		stakingContract = await StakingContract.deploy(erc20Contract.address, beneficiary.address, new Date(2022, 1, 18).getTime() / 1000);
-	// 		await expect(erc20Contract.allocateVesting(stakingContract.address, ethers.utils.parseEther('100000000000')))
-	// 			.to.emit(stakingContract, 'UpdateMaxVestingAmount');
-	// 	});
+	// In-App Staking
+	describe('In-App Staking', function () {
+		let contract;
+		let amount;
+		beforeEach(async function() {
+			amount = ethers.utils.parseEther('100000000000');
+			const StakingContract = await ethers.getContractFactory('StakingContract');
+			contract = await StakingContract.deploy(token.address, beneficiary.address, new Date(2022, 2, 15).getTime() / 1000, amount);
+			await expect(token.transfer(contract.address, amount))
+				.to.emit(token, 'Transfer');
+			await expect(token.approve(contract.address, amount))
+				.to.emit(token, 'Approval');
+			expect (await token.allowance(owner.address, contract.address))
+				.to.equal(amount)
+		});
 
-	// 	it ('owner is able to transfer ownership to owner2', async function() {
-	// 		await expect(stakingContract.transferOwnership(owner2.address))
-	// 			.to.emit(stakingContract, 'OwnershipTransferred')
-	// 			.withArgs(owner.address, owner2.address);
-	// 	})
-	// 	it ('owner is able to pause the setReleaseTime function', async function() {
-	// 		await expect(stakingContract.pause())
-	// 			.to.emit(stakingContract, 'Paused')
-	// 			.withArgs(owner.address);
-	// 	})
-	// 	it ('owner is able to pause the claim function', async function() {
-	// 		await expect(stakingContract.pause())
-	// 			.to.emit(stakingContract, 'Paused')
-	// 			.withArgs(owner.address);
-	// 	})
-	// 	it ('owner is able to pause the claimableAmount function', async function() {
-	// 		await expect(stakingContract.pause())
-	// 			.to.emit(stakingContract, 'Paused')
-	// 			.withArgs(owner.address);
-	// 	})
-	// 	it ('Reverts execution of setReleaseTime function when paused', async function() {
-	// 		await expect(stakingContract.pause())
-	// 			.to.emit(stakingContract, 'Paused')
-	// 			.withArgs(owner.address);
-	// 		await expect(stakingContract.setReleaseTime(new Date(2022, 1, 18).getTime() / 1000))
-	// 			.to.be.revertedWith('Pausable: paused');
-	// 	})
-	// 	it ('Reverts execution of claim function when paused', async function() {
-	// 		await expect(stakingContract.pause())
-	// 			.to.emit(stakingContract, 'Paused')
-	// 			.withArgs(owner.address);
-	// 		await expect(stakingContract.connect(beneficiary).claim(erc20Contract.address))
-	// 			.to.be.revertedWith('Pausable: paused');
-	// 	})
-	// 	it ('Reverts execution of claimableAmount function when paused', async function() {
-	// 		await expect(stakingContract.pause())
-	// 			.to.emit(stakingContract, 'Paused')
-	// 			.withArgs(owner.address);
-	// 		await expect(stakingContract.connect(beneficiary).claimableAmount())
-	// 			.to.be.revertedWith('Pausable: paused');
-	// 	})
-	// 	it('beneficiary successfully claim tokens', async function() {
-	// 		await expect(stakingContract.setReleaseTime(new Date(2021, 1, 18).getTime() / 1000))
-	// 			.to.emit(stakingContract, 'ReleaseTimeChange');
-	// 		await expect(stakingContract.connect(beneficiary).claim(erc20Contract.address))
-	// 			.to.emit(stakingContract, 'TokenClaimed');
-	// 		expect(await erc20Contract.balanceOf(beneficiary.address))
-	// 			.to.equal(ethers.utils.parseEther('100000000000'));
-	// 	});
-	// })
+		it ('owner is able to transfer ownership to owner2', async function() {
+			await expect(contract.transferOwnership(owner2.address))
+				.to.emit(contract, 'OwnershipTransferred')
+				.withArgs(owner.address, owner2.address);
+		})
+		it ('owner is able to pause the claim function', async function() {
+			await expect(contract.pause())
+				.to.emit(contract, 'Paused')
+				.withArgs(owner.address);
+		})
+		it ('owner is able to pause the claimableAmount function', async function() {
+			await expect(contract.pause())
+				.to.emit(contract, 'Paused')
+				.withArgs(owner.address);
+		})
+		it ('Reverts execution of claim function when paused', async function() {
+			await expect(contract.pause())
+				.to.emit(contract, 'Paused')
+				.withArgs(owner.address);
+			await expect(contract.connect(beneficiary).claim(token.address))
+				.to.be.revertedWith('Pausable: paused');
+		})
+		it ('Reverts execution of claimableAmount function when paused', async function() {
+			await expect(contract.pause())
+				.to.emit(contract, 'Paused')
+				.withArgs(owner.address);
+			await expect(contract.connect(beneficiary).claimableAmount())
+				.to.be.revertedWith('Pausable: paused');
+		})
+		it('beneficiary successfully claim tokens', async function() {
+			await network.provider.send(
+				"evm_setNextBlockTimestamp", 
+				[new Date(2022, 2, 15).getTime() / 1000]);
+
+			await expect(contract.connect(beneficiary).claim(token.address))
+				.to.emit(contract, 'TokenClaimed');
+			expect(await token.balanceOf(beneficiary.address))
+				.to.equal(amount);
+
+			await network.provider.request({
+				method: "hardhat_reset",
+				params: [{ timestamp: new Date().getTime() / 1000 }]});
+		});
+	})
 
 	// Marketing
 	describe('Marketing', function () {
@@ -276,66 +276,66 @@ describe('MIS Vesting contract unit testing', function() {
 		});
 	})
 
-	// // Influencers
-	// describe('Influencers', function () {
-	// 	let influencerContract;
-	// 	beforeEach(async function() {
-	// 		const InfluencerContract = await ethers.getContractFactory('InfluencerContract');
-	// 		influencerContract = await InfluencerContract.deploy(erc20Contract.address, beneficiary.address, new Date(2022, 1, 18).getTime() / 1000);
-	// 		await expect(erc20Contract.allocateVesting(influencerContract.address, ethers.utils.parseEther('50000000000')))
-	// 			.to.emit(influencerContract, 'UpdateMaxVestingAmount');
-	// 	});
+	// Influencers
+	describe('Influencers', function () {
+		let contract;
+		let amount;
+		beforeEach(async function() {
+			amount = ethers.utils.parseEther('50000000000');
+			const InfluencerContract = await ethers.getContractFactory('InfluencerContract');
+			contract = await InfluencerContract.deploy(token.address, beneficiary.address, new Date(2021, 9, 17).getTime() / 1000, amount);
+			await expect(token.transfer(contract.address, amount))
+				.to.emit(token, 'Transfer');
+			await expect(token.approve(contract.address, amount))
+				.to.emit(token, 'Approval');
+			expect (await token.allowance(owner.address, contract.address))
+				.to.equal(amount)
+		});
 
-	// 	it ('owner is able to transfer ownership to owner2', async function() {
-	// 		await expect(influencerContract.transferOwnership(owner2.address))
-	// 			.to.emit(influencerContract, 'OwnershipTransferred')
-	// 			.withArgs(owner.address, owner2.address);
-	// 	})
-	// 	it ('owner is able to pause the setReleaseTime function', async function() {
-	// 		await expect(influencerContract.pause())
-	// 			.to.emit(influencerContract, 'Paused')
-	// 			.withArgs(owner.address);
-	// 	})
-	// 	it ('owner is able to pause the claim function', async function() {
-	// 		await expect(influencerContract.pause())
-	// 			.to.emit(influencerContract, 'Paused')
-	// 			.withArgs(owner.address);
-	// 	})
-	// 	it ('owner is able to pause the claimableAmount function', async function() {
-	// 		await expect(influencerContract.pause())
-	// 			.to.emit(influencerContract, 'Paused')
-	// 			.withArgs(owner.address);
-	// 	})
-	// 	it ('Reverts execution of setReleaseTime function when paused', async function() {
-	// 		await expect(influencerContract.pause())
-	// 			.to.emit(influencerContract, 'Paused')
-	// 			.withArgs(owner.address);
-	// 		await expect(influencerContract.setReleaseTime(new Date(2022, 1, 18).getTime() / 1000))
-	// 			.to.be.revertedWith('Pausable: paused');
-	// 	})
-	// 	it ('Reverts execution of claim function when paused', async function() {
-	// 		await expect(influencerContract.pause())
-	// 			.to.emit(influencerContract, 'Paused')
-	// 			.withArgs(owner.address);
-	// 		await expect(influencerContract.connect(beneficiary).claim(erc20Contract.address))
-	// 			.to.be.revertedWith('Pausable: paused');
-	// 	})
-	// 	it ('Reverts execution of claimableAmount function when paused', async function() {
-	// 		await expect(influencerContract.pause())
-	// 			.to.emit(influencerContract, 'Paused')
-	// 			.withArgs(owner.address);
-	// 		await expect(influencerContract.connect(beneficiary).claimableAmount())
-	// 			.to.be.revertedWith('Pausable: paused');
-	// 	})
-	// 	it('beneficiary successfully claim tokens', async function() {
-	// 		await expect(influencerContract.setReleaseTime(new Date(2021, 1, 18).getTime() / 1000))
-	// 			.to.emit(influencerContract, 'ReleaseTimeChange');
-	// 		await expect(influencerContract.connect(beneficiary).claim(erc20Contract.address))
-	// 			.to.emit(influencerContract, 'TokenClaimed');
-	// 		expect(await erc20Contract.balanceOf(beneficiary.address))
-	// 			.to.equal(ethers.utils.parseEther('50000000000'));
-	// 	});
-	// })
+		it ('owner is able to transfer ownership to owner2', async function() {
+			await expect(contract.transferOwnership(owner2.address))
+				.to.emit(contract, 'OwnershipTransferred')
+				.withArgs(owner.address, owner2.address);
+		})
+		it ('owner is able to pause the claim function', async function() {
+			await expect(contract.pause())
+				.to.emit(contract, 'Paused')
+				.withArgs(owner.address);
+		})
+		it ('owner is able to pause the claimableAmount function', async function() {
+			await expect(contract.pause())
+				.to.emit(contract, 'Paused')
+				.withArgs(owner.address);
+		})
+		it ('Reverts execution of claim function when paused', async function() {
+			await expect(contract.pause())
+				.to.emit(contract, 'Paused')
+				.withArgs(owner.address);
+			await expect(contract.connect(beneficiary).claim(token.address))
+				.to.be.revertedWith('Pausable: paused');
+		})
+		it ('Reverts execution of claimableAmount function when paused', async function() {
+			await expect(contract.pause())
+				.to.emit(contract, 'Paused')
+				.withArgs(owner.address);
+			await expect(contract.connect(beneficiary).claimableAmount())
+				.to.be.revertedWith('Pausable: paused');
+		})
+		it('beneficiary successfully claim tokens', async function() {
+			await network.provider.send(
+				"evm_setNextBlockTimestamp", 
+				[new Date(2021, 9, 17).getTime() / 1000]);
+
+			await expect(contract.connect(beneficiary).claim(token.address))
+				.to.emit(contract, 'TokenClaimed');
+			expect(await token.balanceOf(beneficiary.address))
+				.to.equal(amount);
+
+			await network.provider.request({
+				method: "hardhat_reset",
+				params: [{ timestamp: new Date().getTime() / 1000 }]});
+		});
+	})
 	
 	// Pre-sale
 	describe('Pre-sale', function () {
@@ -426,52 +426,58 @@ describe('MIS Vesting contract unit testing', function() {
 		});
 	})
 
-	// // Farming rewards
-	// describe('Farming rewards', function () {
-	// 	let farmingRewardContract;
-	// 	beforeEach(async function() {
-	// 		const FarmingRewardContract = await ethers.getContractFactory('FarmingRewardContract');
-	// 		farmingRewardContract = await FarmingRewardContract.deploy(erc20Contract.address, beneficiary.address);
-	// 		await expect(erc20Contract.allocateVesting(farmingRewardContract.address, ethers.utils.parseEther('100000000000')))
-	// 			.to.emit(farmingRewardContract, 'UpdateMaxVestingAmount');
-	// 	});
+	// Farming rewards
+	describe('Farming rewards', function () {
+		let contract;
+		let amount;
+		beforeEach(async function() {
+			amount = ethers.utils.parseEther('100000000000');
+			const FarmingRewardContract = await ethers.getContractFactory('FarmingRewardContract');
+			contract = await FarmingRewardContract.deploy(token.address, beneficiary.address, amount);
+			await expect(token.transfer(contract.address, amount))
+				.to.emit(token, 'Transfer');
+			await expect(token.approve(contract.address, amount))
+				.to.emit(token, 'Approval');
+			expect (await token.allowance(owner.address, contract.address))
+				.to.equal(amount)
+		});
 
-	// 	it ('owner is able to transfer ownership to owner2', async function() {
-	// 		await expect(farmingRewardContract.transferOwnership(owner2.address))
-	// 			.to.emit(farmingRewardContract, 'OwnershipTransferred')
-	// 			.withArgs(owner.address, owner2.address);
-	// 	})
-	// 	it ('owner is able to pause the claim function', async function() {
-	// 		await expect(farmingRewardContract.pause())
-	// 			.to.emit(farmingRewardContract, 'Paused')
-	// 			.withArgs(owner.address);
-	// 	})
-	// 	it ('owner is able to pause the claimableAmount function', async function() {
-	// 		await expect(farmingRewardContract.pause())
-	// 			.to.emit(farmingRewardContract, 'Paused')
-	// 			.withArgs(owner.address);
-	// 	})
-	// 	it ('Reverts execution of claim function when paused', async function() {
-	// 		await expect(farmingRewardContract.pause())
-	// 			.to.emit(farmingRewardContract, 'Paused')
-	// 			.withArgs(owner.address);
-	// 		await expect(farmingRewardContract.connect(beneficiary).claim(erc20Contract.address))
-	// 			.to.be.revertedWith('Pausable: paused');
-	// 	})
-	// 	it ('Reverts execution of claimableAmount function when paused', async function() {
-	// 		await expect(farmingRewardContract.pause())
-	// 			.to.emit(farmingRewardContract, 'Paused')
-	// 			.withArgs(owner.address);
-	// 		await expect(farmingRewardContract.connect(beneficiary).claimableAmount())
-	// 			.to.be.revertedWith('Pausable: paused');
-	// 	})
-	// 	it('beneficiary successfully claim tokens', async function() {
-	// 		await expect(farmingRewardContract.connect(beneficiary).claim(erc20Contract.address))
-	// 			.to.emit(farmingRewardContract, 'TokenClaimed');
-	// 		expect(await erc20Contract.balanceOf(beneficiary.address))
-	// 			.to.equal(ethers.utils.parseEther('100000000000'));
-	// 	});
-	// })
+		it ('owner is able to transfer ownership to owner2', async function() {
+			await expect(contract.transferOwnership(owner2.address))
+				.to.emit(contract, 'OwnershipTransferred')
+				.withArgs(owner.address, owner2.address);
+		})
+		it ('owner is able to pause the claim function', async function() {
+			await expect(contract.pause())
+				.to.emit(contract, 'Paused')
+				.withArgs(owner.address);
+		})
+		it ('owner is able to pause the claimableAmount function', async function() {
+			await expect(contract.pause())
+				.to.emit(contract, 'Paused')
+				.withArgs(owner.address);
+		})
+		it ('Reverts execution of claim function when paused', async function() {
+			await expect(contract.pause())
+				.to.emit(contract, 'Paused')
+				.withArgs(owner.address);
+			await expect(contract.connect(beneficiary).claim(token.address))
+				.to.be.revertedWith('Pausable: paused');
+		})
+		it ('Reverts execution of claimableAmount function when paused', async function() {
+			await expect(contract.pause())
+				.to.emit(contract, 'Paused')
+				.withArgs(owner.address);
+			await expect(contract.connect(beneficiary).claimableAmount())
+				.to.be.revertedWith('Pausable: paused');
+		})
+		it('beneficiary successfully claim tokens', async function() {
+			await expect(contract.connect(beneficiary).claim(token.address))
+				.to.emit(contract, 'TokenClaimed');
+			expect(await token.balanceOf(beneficiary.address))
+				.to.equal(amount);
+		});
+	})
 
 	// Development Fund
 	describe('Development Fund', function () {

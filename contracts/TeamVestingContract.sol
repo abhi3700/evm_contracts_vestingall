@@ -147,7 +147,7 @@ contract TeamVestingContract is Ownable, Pausable {
                 }
                 timelocks[_addr].pop();
             } else {
-                i++;
+                ++i;
             }
         }
     }
@@ -165,12 +165,11 @@ contract TeamVestingContract is Ownable, Pausable {
         require(amount <= totalVestedAmount, "Cannot withdraw more than the total vested amount");
         
         totalClaimedAmount = totalClaimedAmount.add(amount);
+        deleteClaimedTimelock(msg.sender);
 
         // transfer from SC
         vestingToken.safeTransfer(msg.sender, amount);
         
-        deleteClaimedTimelock(msg.sender);
-
         emit TokenClaimed(msg.sender, amount, block.timestamp);
     }
 

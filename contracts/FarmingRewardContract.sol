@@ -23,23 +23,19 @@ contract FarmingRewardContract is Ownable, Pausable {
     IERC20 public vestingToken;
 
     uint256 public maxVestingAmount;
-    uint256 public releaseTime;
     uint256 public totalClaimedAmount;
 
     // ===============EVENTS============================================================================================
     event UpdatedMaxVestingAmount(address caller, uint256 amount, uint256 currentTimestamp);
     event TokenClaimed(address indexed claimerAddress, uint256 amount, uint256 currentTimestamp);
-    event ReleaseTimeChanged(uint256 _releaseTime);
 
     /// @notice Constructor
     /// @param _token token contract Interface
     /// @param _beneficiary Beneficiary address
-    /// @param _releaseTime Unlock time
     /// @param _maxVestingAmount max vesting amount. This is also updatable using `updateMaxVestingAmount` 
     constructor(
         IERC20 _token,
         address _beneficiary,
-        uint256 _releaseTime,
         uint256 _maxVestingAmount
     ) {
         require(address(_token) != address(0), "Invalid address");
@@ -48,9 +44,8 @@ contract FarmingRewardContract is Ownable, Pausable {
 
         beneficiary = _beneficiary;
         vestingToken = _token;
-        releaseTime = _releaseTime;
 
-        maxVestingAmount = 0;
+        maxVestingAmount = _maxVestingAmount;
         totalClaimedAmount = 0;
     }
 
@@ -64,16 +59,8 @@ contract FarmingRewardContract is Ownable, Pausable {
         emit UpdatedMaxVestingAmount(msg.sender, _maxAmount, block.timestamp);
     }
 
-    /// @notice Change unlock time
-    /// @param _releaseTime Unlock time
-    function setReleaseTime(uint256 _releaseTime) public onlyOwner whenNotPaused {
-        releaseTime = _releaseTime;
-        emit ReleaseTimeChanged(releaseTime);
-    }
-
     /// @notice Calculate claimable amount
     function claimableAmount() public view whenNotPaused returns(uint256) {
-        if (releaseTime > block.timestamp) return 0;
         return maxVestingAmount;
     }
 

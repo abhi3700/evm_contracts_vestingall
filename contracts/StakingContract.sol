@@ -29,7 +29,6 @@ contract StakingContract is Ownable, Pausable {
     // ===============EVENTS============================================================================================
     event UpdatedMaxVestingAmount(address caller, uint256 amount, uint256 currentTimestamp);
     event TokenClaimed(address indexed claimerAddress, uint256 amount, uint256 currentTimestamp);
-    event ReleaseTimeChanged(uint256 _releaseTime);
     
     /// @notice Constructor
     /// @param _token token contract Interface
@@ -50,7 +49,7 @@ contract StakingContract is Ownable, Pausable {
         vestingToken = _token;
         releaseTime = _releaseTime;
 
-        maxVestingAmount = 0;
+        maxVestingAmount = _maxVestingAmount;
         totalClaimedAmount = 0;
     }
 
@@ -62,13 +61,6 @@ contract StakingContract is Ownable, Pausable {
         maxVestingAmount = maxVestingAmount.add(_maxAmount);
 
         emit UpdatedMaxVestingAmount(msg.sender, _maxAmount, block.timestamp);
-    }
-
-    /// @notice Change unlock time
-    /// @param _releaseTime Unlock time
-    function setReleaseTime(uint256 _releaseTime) public onlyOwner whenNotPaused {
-        releaseTime = _releaseTime;
-        emit ReleaseTimeChanged(releaseTime);
     }
 
     /// @notice Calculate claimable amount

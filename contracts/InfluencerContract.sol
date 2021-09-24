@@ -29,9 +29,8 @@ contract InfluencerContract is Ownable, Pausable {
     // ===============EVENTS============================================================================================
     event UpdatedMaxVestingAmount(address caller, uint256 amount, uint256 currentTimestamp);
     event TokenClaimed(address indexed claimerAddress, uint256 amount, uint256 currentTimestamp);
-    event ReleaseTimeChanged(uint256 _releaseTime);
 
-        /// @notice Constructor
+    /// @notice Constructor
     /// @param _token token contract Interface
     /// @param _beneficiary Beneficiary address
     /// @param _releaseTime Unlock time
@@ -62,13 +61,6 @@ contract InfluencerContract is Ownable, Pausable {
         maxVestingAmount = maxVestingAmount.add(_maxAmount);
 
         emit UpdatedMaxVestingAmount(msg.sender, _maxAmount, block.timestamp);
-    }
-
-    /// @notice Change unlock time
-    /// @param _releaseTime Unlock time
-    function setReleaseTime(uint256 _releaseTime) public onlyOwner whenNotPaused {
-        releaseTime = _releaseTime;
-        emit ReleaseTimeChanged(releaseTime);
     }
 
     /// @notice Calculate claimable amount
