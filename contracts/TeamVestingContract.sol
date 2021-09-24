@@ -137,6 +137,21 @@ contract TeamVestingContract is Ownable, Pausable {
         return sum;
     }
 
+    /// @notice Delete claimed timelock
+    /// @param _addr beneficiary address
+    function deleteClaimedTimelock(address _addr) internal {
+        for (uint256 i = 0; i < timelocks[_addr].length; ) {
+            if ( block.timestamp >= timelocks[_addr][i].releaseTimestamp ) {
+                if (i != timelocks[_addr].length - 1) {
+                    timelocks[_addr][i] = timelocks[_addr][timelocks[_addr].length - 1];
+                }
+                timelocks[_addr].pop();
+            } else {
+                i++;
+            }
+        }
+    }
+
     // ------------------------------------------------------------------------------------------
     /// @notice Claim vesting
     /// @dev Beneficiary can claim claimableAmount which was vested
@@ -153,6 +168,8 @@ contract TeamVestingContract is Ownable, Pausable {
 
         // transfer from SC
         vestingToken.safeTransfer(msg.sender, amount);
+        
+        deleteClaimedTimelock(msg.sender);
 
         emit TokenClaimed(msg.sender, amount, block.timestamp);
     }

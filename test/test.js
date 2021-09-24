@@ -19,7 +19,7 @@ describe('MIS Vesting contract unit testing', function() {
 		let contract;
 		let amount;
 		beforeEach(async function() {
-			const amount = ethers.utils.parseEther('100000000000');
+			amount = ethers.utils.parseEther('100000000000');
 			const TeamVestingContract = await ethers.getContractFactory('TeamVestingContract');
 			contract = await TeamVestingContract.deploy(token.address, amount);
 			await expect(token.transfer(contract.address, amount))
@@ -107,6 +107,9 @@ describe('MIS Vesting contract unit testing', function() {
 				.to.emit(contract, 'TokenClaimed');
 			expect(await token.balanceOf(addr1.address))
 				.to.equal(ethers.utils.parseEther('10000000000'));
+
+			expect(await contract.claimableAmount(addr1.address))
+				.to.equal(0);
 
 			await network.provider.request({
 				method: "hardhat_reset",
