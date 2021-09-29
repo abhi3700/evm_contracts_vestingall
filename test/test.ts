@@ -1,12 +1,19 @@
-const { ethers, upgrades } = require('hardhat');
-const { expect } = require("chai");
+import { ethers, network } from "hardhat";
+import { Signer } from "ethers";
+import { expect } from "chai";
 
-let owner, owner2, addr1, addr2, addr3, addr4, beneficiary;
-
-let token;
+let owner : any, 
+	owner2 : any, 
+	addr1 : any, 
+	addr2 : any, 
+	addr3 : any, 
+	addr4 : any, 
+	beneficiary: any;
+let token : any;
 
 beforeEach(async function () {
-	[owner, owner2, addr1, addr2, addr3, addr4, beneficiary] = await ethers.getSigners();
+	let accounts: Signer[] = await ethers.getSigners();
+	[owner, owner2, addr1, addr2, addr3, addr4, beneficiary] = accounts;
 	
 	const ERC20 =  await ethers.getContractFactory('MisBlockBase');
 	token = await ERC20.deploy();
@@ -16,8 +23,8 @@ beforeEach(async function () {
 describe('MIS Vesting contract unit testing', function() {
 	// Team Vesting
 	describe('Team Vesting', function () {
-		let contract;
-		let amount;
+		let contract : any;
+		let amount : any;
 		beforeEach(async function() {
 			amount = ethers.utils.parseEther('100000000000');
 			const TeamVestingContract = await ethers.getContractFactory('TeamVestingContract');
@@ -133,8 +140,8 @@ describe('MIS Vesting contract unit testing', function() {
 
 	// In-App Staking
 	describe('In-App Staking', function () {
-		let contract;
-		let amount;
+		let contract : any;
+		let amount : any;
 		beforeEach(async function() {
 			amount = ethers.utils.parseEther('100000000000');
 			const StakingContract = await ethers.getContractFactory('StakingContract');
@@ -194,8 +201,8 @@ describe('MIS Vesting contract unit testing', function() {
 
 	// Marketing
 	describe('Marketing', function () {
-		let contract;
-		let amount;
+		let contract : any;
+		let amount : any;
 		beforeEach(async function() {
 			const amount = ethers.utils.parseEther('50000000000');
 			const MarketingContract = await ethers.getContractFactory('MarketingContract');
@@ -278,8 +285,8 @@ describe('MIS Vesting contract unit testing', function() {
 
 	// Influencers
 	describe('Influencers', function () {
-		let contract;
-		let amount;
+		let contract : any;
+		let amount : any;
 		beforeEach(async function() {
 			amount = ethers.utils.parseEther('50000000000');
 			const InfluencerContract = await ethers.getContractFactory('InfluencerContract');
@@ -339,8 +346,8 @@ describe('MIS Vesting contract unit testing', function() {
 	
 	// Pre-sale
 	describe('Pre-sale', function () {
-		let contract;
-		let amount;
+		let contract : any;
+		let amount : any;
 		beforeEach(async function() {
 			amount = ethers.utils.parseEther('100000000000');
 
@@ -428,8 +435,8 @@ describe('MIS Vesting contract unit testing', function() {
 
 	// Farming rewards
 	describe('Farming rewards', function () {
-		let contract;
-		let amount;
+		let contract : any;
+		let amount : any;
 		beforeEach(async function() {
 			amount = ethers.utils.parseEther('100000000000');
 			const FarmingRewardContract = await ethers.getContractFactory('FarmingRewardContract');
@@ -481,8 +488,8 @@ describe('MIS Vesting contract unit testing', function() {
 
 	// Development Fund
 	describe('Development Fund', function () {
-		let contract;
-		let amount;
+		let contract : any;
+		let amount : any;
 		beforeEach(async function() {
 			const amount = ethers.utils.parseEther('150000000000');
 			const DevelopmentFundContract = await ethers.getContractFactory('DevelopmentFundContract');

@@ -23,9 +23,6 @@ contract TeamVestingContract is Ownable, Pausable {
     struct Timelock {
         uint256 amount;
         uint256 releaseTimestamp;
-        // bool released;        // not needed, as this is checked by the condition if (currentTime ><= releaseTimestamp)
-        // bool revoked;        // is superseded by revokeTime (which is set in revokeTimes as mapping).
-        // uint256 isRevocable;     // 0 -> non-revocable, 1-> revocable 
     }
 
     mapping(address => Timelock[]) public timelocks;
