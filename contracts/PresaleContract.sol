@@ -66,7 +66,7 @@ contract PresaleContract is Ownable, Pausable {
     /// @param _beneficiary beneficiary address
     /// @param _amount vesting amount
     /// @param _unlockTimestamp vesting unlock time
-    function vest(address _beneficiary, uint256 _amount, uint256 _unlockTimestamp) external payable whenNotPaused {
+    function vest(address _beneficiary, uint256 _amount, uint256 _unlockTimestamp) external whenNotPaused {
         require(_beneficiary != address(0), "Invalid address");
         require(_amount > 0, "amount must be positive");
         require(maxVestingAmount != 0, "maxVestingAmount is not yet set by admin.");
