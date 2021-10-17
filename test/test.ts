@@ -332,7 +332,7 @@ describe('MIS Vesting contract unit testing', function() {
 		it('beneficiary successfully claim tokens', async function() {
 			await network.provider.send(
 				"evm_setNextBlockTimestamp", 
-				[new Date(2021, 9, 17).getTime() / 1000]);
+				[new Date(2022, 2, 15).getTime() / 1000]);
 
 			await expect(contract.connect(beneficiary).claim(token.address))
 				.to.emit(contract, 'TokenClaimed');
