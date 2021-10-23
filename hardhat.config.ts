@@ -19,7 +19,7 @@ const INFURA_API_KEY = process.env.INFURA_API_KEY || "";
 const SPEEDY_NODE_KEY = process.env.SPEEDY_NODE_KEY || "";
 const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY || "";
 
-export default {
+const config: HardhatUserConfig = {  
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {
@@ -45,7 +45,7 @@ export default {
     },
   },
   solidity: {
-    version: "0.8.4",
+    version: "0.8.0",
     settings: {
       optimizer: {
         enabled: true,
@@ -71,3 +71,5 @@ export default {
     target: "ethers-v5",
   },
 };
+
+export default config;
