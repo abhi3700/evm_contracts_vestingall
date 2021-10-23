@@ -4,8 +4,8 @@ pragma solidity ^0.8.4;
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
-import '@openzeppelin/contracts/utils/Context.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
+import '@openzeppelin/contracts/utils/Context.sol';
 import 'hardhat/console.sol';
 
 /// @title Team Vesting Contract
@@ -39,7 +39,6 @@ contract TeamVestingContract is Ownable, Pausable {
     event TokenClaimed(address indexed claimerAddress, uint256 amount, uint256 currentTimestamp);
     event Revoke(address indexed account, uint256 currentTimestamp);
     event Unrevoke(address indexed account, uint256 currentTimestamp);
-    event VestTransferFromFailed(uint256 amount);
 
     //================CONSTRUCTOR================================================================
     /// @notice Constructor
@@ -90,12 +89,8 @@ contract TeamVestingContract is Ownable, Pausable {
         // transfer to SC using delegate transfer
         // NOTE: the tokens has to be approved first by the caller to the SC using `approve()` method.
         bool success = vestingToken.transferFrom(_msgSender(), address(this), _amount);
-        if(success) {
-            emit TokenVested(_beneficiary, _amount, _unlockTimestamp, block.timestamp);
-        } else {
-            emit VestTransferFromFailed(_amount);
-            revert("vestingToken.transferFrom function failed");
-        }
+        require(success, "vestingToken.transferFrom function failed");
+        emit TokenVested(_beneficiary, _amount, _unlockTimestamp, block.timestamp);
     }
 
     // ------------------------------------------------------------------------------------------

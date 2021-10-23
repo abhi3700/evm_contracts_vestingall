@@ -33,7 +33,6 @@ contract DevelopmentFundContract is Ownable, Pausable {
     event UpdatedMaxVestingAmount(address caller, uint256 amount, uint256 currentTimestamp);
     event TokenVested(address indexed claimerAddress, uint256 amount, uint256 unlockTimestamp, uint256 currentTimestamp);
     event TokenClaimed(address indexed claimerAddress, uint256 amount, uint256 currentTimestamp);
-    event VestTransferFromFailed(uint256 amount);
 
     //================CONSTRUCTOR================================================================
     /// @notice Constructor
@@ -84,12 +83,8 @@ contract DevelopmentFundContract is Ownable, Pausable {
         // transfer to SC using delegate transfer
         // NOTE: the tokens has to be approved first by the caller to the SC using `approve()` method.
         bool success = vestingToken.transferFrom(_msgSender(), address(this), _amount);
-        if(success) {
-            emit TokenVested(_beneficiary, _amount, _unlockTimestamp, block.timestamp);
-        } else {
-            emit VestTransferFromFailed(_amount);
-            revert("vestingToken.transferFrom function failed");
-        }
+        require(success, "vestingToken.transferFrom function failed");
+        emit TokenVested(_beneficiary, _amount, _unlockTimestamp, block.timestamp);
     }
 
     /// @notice Calculate claimable amount for a beneficiary
