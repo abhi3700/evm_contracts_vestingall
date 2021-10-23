@@ -1,13 +1,20 @@
 {
-  "name": "hardhat-project",
+  "name": "vesting-contract",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "build-contracts": "sol-merger \"./contracts/*.sol\" ./build"
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test"
   },
+  "author": "",
+  "license": "MIT",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^2.1.6",
     "@nomiclabs/hardhat-truffle5": "^2.0.0",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
+    "@typechain/ethers-v5": "^7.0.1",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/test-helpers": "^0.5.13",
     "@typechain/hardhat": "^2.3.0",

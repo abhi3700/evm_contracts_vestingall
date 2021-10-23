@@ -10,3 +10,4 @@ package-lock.json
 # temp files
 todo
 .DS_Store
+build/
