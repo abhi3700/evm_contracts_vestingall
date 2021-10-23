@@ -5,6 +5,8 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import '@openzeppelin/contracts/utils/Context.sol';
+import 'hardhat/console.sol';
 
 /// @title Manual Burning Contract
 contract ManualBurningContract is Ownable, Pausable {
@@ -39,7 +41,7 @@ contract ManualBurningContract is Ownable, Pausable {
     function updateMaxVestingAmount(uint256 _maxAmount) external onlyOwner whenNotPaused {
         maxVestingAmount = maxVestingAmount.add(_maxAmount);
 
-        emit UpdatedMaxVestingAmount(msg.sender, _maxAmount, block.timestamp);
+        emit UpdatedMaxVestingAmount(_msgSender(), _maxAmount, block.timestamp);
     }
 
     /// @notice Pause contract  

@@ -5,6 +5,8 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import '@openzeppelin/contracts/utils/Context.sol';
+import 'hardhat/console.sol';
 
 /// @title Presale Vesting Contract
 /// @dev Any address can vest tokens into this contract with amount, releaseTimestamp, revocable.
@@ -58,7 +60,7 @@ contract DevelopmentFundContract is Ownable, Pausable {
     function updateMaxVestingAmount(uint256 _maxAmount) external onlyOwner whenNotPaused {
         maxVestingAmount = maxVestingAmount.add(_maxAmount);
 
-        emit UpdatedMaxVestingAmount(msg.sender, _maxAmount, block.timestamp);
+        emit UpdatedMaxVestingAmount(_msgSender(), _maxAmount, block.timestamp);
     }
 
     // ------------------------------------------------------------------------------------------
@@ -81,7 +83,7 @@ contract DevelopmentFundContract is Ownable, Pausable {
 
         // transfer to SC using delegate transfer
         // NOTE: the tokens has to be approved first by the caller to the SC using `approve()` method.
-        bool success = vestingToken.transferFrom(msg.sender, address(this), _amount);
+        bool success = vestingToken.transferFrom(_msgSender(), address(this), _amount);
         if(success) {
             emit TokenVested(_beneficiary, _amount, _unlockTimestamp, block.timestamp);
         } else {
@@ -129,17 +131,17 @@ contract DevelopmentFundContract is Ownable, Pausable {
     function claim(IERC20 _token) external whenNotPaused {
         require(vestingToken == _token, "invalid token address");
 
-        uint256 amount = claimableAmount(msg.sender);
+        uint256 amount = claimableAmount(_msgSender());
         require(amount > 0, "Claimable amount must be positive");
         require(amount <= totalVestedAmount, "Cannot withdraw more than the total vested amount");
         
         totalClaimedAmount = totalClaimedAmount.add(amount);
-        deleteClaimedTimelock(msg.sender);
+        deleteClaimedTimelock(_msgSender());
 
         // transfer from SC
-        vestingToken.safeTransfer(msg.sender, amount);
+        vestingToken.safeTransfer(_msgSender(), amount);
 
-        emit TokenClaimed(msg.sender, amount, block.timestamp);
+        emit TokenClaimed(_msgSender(), amount, block.timestamp);
     }
 
     // ------------------------------------------------------------------------------------------

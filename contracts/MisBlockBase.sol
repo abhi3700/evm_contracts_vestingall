@@ -7,6 +7,6 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 
 contract MisBlockBase is ERC20, Ownable {
     constructor() ERC20("UNICOIN", "UNICN") {
-        _mint(msg.sender, 1000000000000 * 10 ** uint256(decimals()));
+        _mint(_msgSender(), 10_0000_0000_000 * 10 ** uint256(decimals()));
     }
 }

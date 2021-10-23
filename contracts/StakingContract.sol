@@ -5,6 +5,8 @@ import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/security/Pausable.sol';
 import '@openzeppelin/contracts/utils/math/SafeMath.sol';
+import '@openzeppelin/contracts/utils/Context.sol';
+import 'hardhat/console.sol';
 
 /// @title Staking Contract
 contract StakingContract is Ownable, Pausable {
@@ -12,7 +14,7 @@ contract StakingContract is Ownable, Pausable {
     using SafeERC20 for IERC20;
     
     modifier onlyBeneficiary() {
-        require(msg.sender == beneficiary, 'Caller should be beneficiary');
+        require(_msgSender() == beneficiary, 'Caller should be beneficiary');
         _;
     }
 
@@ -60,7 +62,7 @@ contract StakingContract is Ownable, Pausable {
     function updateMaxVestingAmount(uint256 _maxAmount) external onlyOwner whenNotPaused {
         maxVestingAmount = maxVestingAmount.add(_maxAmount);
 
-        emit UpdatedMaxVestingAmount(msg.sender, _maxAmount, block.timestamp);
+        emit UpdatedMaxVestingAmount(_msgSender(), _maxAmount, block.timestamp);
     }
 
     /// @notice Calculate claimable amount
@@ -81,9 +83,9 @@ contract StakingContract is Ownable, Pausable {
         totalClaimedAmount = totalClaimedAmount.add(amount);
         
         // transfer from SC
-        vestingToken.safeTransfer(msg.sender, amount);        
+        vestingToken.safeTransfer(_msgSender(), amount);        
         
-        emit TokenClaimed(msg.sender, amount, block.timestamp);
+        emit TokenClaimed(_msgSender(), amount, block.timestamp);
     }
 
     /// @notice Pause contract  
